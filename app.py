@@ -14,7 +14,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.jinja_env.filters["from_json"] = json.loads
 app.teardown_appcontext(close_db)
 
-APPROVED_COACH_EMAILS = os.environ.get("APPROVED_COACH_EMAILS", "").split(",")
+APPROVED_COACH_EMAILS  = os.environ.get("APPROVED_COACH_EMAILS", "").split(",")
+APPROVED_ADMIN_EMAILS  = os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",")
 
 google_bp = make_google_blueprint(
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
@@ -254,8 +255,24 @@ def compute_matches(student, coaches):
     return results
 
 
+def _require_admin():
+    """Returns the admin's email if authorized, or a redirect response if not."""
+    if not google.authorized:
+        return None, redirect(url_for("google.login"))
+    resp = google.get("/oauth2/v2/userinfo")
+    if not resp.ok:
+        return None, redirect(url_for("google.login"))
+    email = resp.json().get("email", "")
+    if APPROVED_ADMIN_EMAILS and email not in APPROVED_ADMIN_EMAILS:
+        return None, render_template("unauthorized.html", email=email)
+    return email, None
+
+
 @app.route("/admin")
 def admin():
+    email, err = _require_admin()
+    if err:
+        return err
     db = get_db()
     students = db.execute("SELECT * FROM student_submissions ORDER BY created_at DESC").fetchall()
     coaches = db.execute("SELECT * FROM coach_submissions ORDER BY updated_at DESC").fetchall()
@@ -265,6 +282,9 @@ def admin():
 
 @app.route("/admin/match/<int:student_id>")
 def admin_match(student_id):
+    email, err = _require_admin()
+    if err:
+        return err
     db = get_db()
     student = db.execute("SELECT * FROM student_submissions WHERE id = ?", (student_id,)).fetchone()
     if not student:
