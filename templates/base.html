@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LearnCraft Spanish{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">LearnCraft Spanish</span>
+      <nav>
+        <a href="{{ url_for('student_form') }}">Student</a>
+        <a href="{{ url_for('coach_form') }}">Coach</a>
+        <a href="{{ url_for('admin') }}">Admin</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

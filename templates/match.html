@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Match Suggestions — {{ student.name }}{% endblock %}
+{% block content %}
+<div class="card wide">
+
+  <div class="match-header">
+    <a href="{{ url_for('admin') }}" class="back-link">← Back to Admin</a>
+    <h1>Match Suggestions for {{ student.name }}</h1>
+    <div class="student-meta">
+      <span>{{ student.email }}</span>
+      <span>Timezone: {{ student.timezone }}</span>
+      {% set ranked = student.countries | from_json %}
+      <span>Accent preferences: {% for c in ranked %}<strong>{{ loop.index }}. {{ c }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}</span>
+    </div>
+    {% if student.notes %}
+    <div class="student-notes"><strong>Notes:</strong> {{ student.notes }}</div>
+    {% endif %}
+  </div>
+
+  {% if not matches %}
+  <p class="hint" style="margin-top:1rem">No coaches have submitted availability yet.</p>
+  {% else %}
+
+  <div class="match-list">
+    {% for m in matches %}
+    <div class="match-card {% if loop.index == 1 %}match-top{% endif %}">
+      <div class="match-rank">{{ loop.index }}</div>
+
+      <div class="match-body">
+        <div class="match-name">
+          {{ m.coach.name }}
+          {% if loop.index == 1 %}<span class="best-badge">Best match</span>{% endif %}
+        </div>
+        <div class="match-sub">{{ m.coach.email }} · {{ m.coach.country }} · {{ m.coach.timezone }}</div>
+
+        <!-- Score bar -->
+        <div class="score-row">
+          <div class="score-pill country-pill" title="Country match score">
+            🌎 Accent
+            <span class="score-val">
+              {% if m.country_score == 3 %}1st preference
+              {% elif m.country_score == 2 %}2nd preference
+              {% elif m.country_score == 1 %}3rd+ preference
+              {% else %}Not in preferences{% endif %}
+            </span>
+          </div>
+          <div class="score-pill av-pill" title="Availability overlap score">
+            🕐 Overlap score: <span class="score-val">{{ m.av_score }}</span>
+          </div>
+          <div class="score-pill total-pill" title="Combined score">
+            ⭐ Total: <span class="score-val">{{ m.total_score }}</span>
+          </div>
+        </div>
+
+        <!-- Overlapping slots -->
+        {% if m.overlapping_slots %}
+        <details {% if loop.index <= 2 %}open{% endif %}>
+          <summary>{{ m.overlapping_slots | length }} overlapping slot{{ 's' if m.overlapping_slots | length != 1 }}</summary>
+          <div class="slot-table-wrap">
+            <table class="slot-table">
+              <thead>
+                <tr><th>Day</th><th>Time (ET)</th><th>Student preference</th><th>Coach status</th></tr>
+              </thead>
+              <tbody>
+                {% for sl in m.overlapping_slots %}
+                <tr>
+                  <td>{{ sl.day }}</td>
+                  <td>{{ sl.time }}</td>
+                  <td><span class="mini-slot {{ sl.student_pref }}">
+                    {% if sl.student_pref == 'pref-first' %}1st choice
+                    {% elif sl.student_pref == 'pref-second' %}2nd choice
+                    {% else %}3rd choice{% endif %}
+                  </span></td>
+                  <td><span class="mini-slot {{ sl.coach_status }}">{{ sl.coach_status | capitalize }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+        {% else %}
+        <p class="no-overlap">No overlapping availability.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

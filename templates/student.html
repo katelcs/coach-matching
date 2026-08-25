@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Student Form{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Student Availability Form</h1>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <form method="POST" action="{{ url_for('student_form') }}">
+
+    <!-- ── Your Info ─────────────────────────────────────────── -->
+    <section>
+      <h2>Your Info</h2>
+      <label>Full Name <input type="text" name="name" required /></label>
+      <label>Email <input type="email" name="email" required /></label>
+      <label>Your Timezone
+        <select name="timezone" id="timezone-select" required>
+          <option value="">Select timezone…</option>
+          {% for tz_val, tz_label in timezones %}
+          <option value="{{ tz_val }}">{{ tz_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </section>
+
+    <!-- ── Accent Preference ──────────────────────────────────── -->
+    <section>
+      <h2>Accent Preference</h2>
+      <p class="hint">Click countries to rank them by preference. Drag to reorder. Your top choice is #1.</p>
+      <div class="ranker">
+        <div class="ranker-pool">
+          <p class="ranker-label">All countries</p>
+          <div id="country-pool">
+            {% for country in countries %}
+            <button type="button" class="chip" data-country="{{ country }}">{{ country }}</button>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="ranker-ranked">
+          <p class="ranker-label">Your preferences <span class="ranker-sub">(drag to reorder)</span></p>
+          <ol id="ranked-list"></ol>
+          <p class="ranker-empty" id="ranker-empty">No countries selected yet.</p>
+        </div>
+      </div>
+      <input type="hidden" name="countries_ranked" id="countries-ranked" value="[]" />
+    </section>
+
+    <!-- ── Weekly Availability ────────────────────────────────── -->
+    <section>
+      <h2>Weekly Availability</h2>
+      <p class="hint">
+        Click each cell to cycle through your preference:
+        <span class="legend pref-first">1st choice</span>
+        <span class="legend pref-second">2nd choice</span>
+        <span class="legend pref-third">3rd choice</span>
+        → clear.
+        Times shown in <span id="tz-label">Eastern Time (ET)</span>.
+      </p>
+      {% if available_slots %}
+      <div class="grid-wrapper">
+        <table class="availability-grid" id="student-grid">
+          <thead>
+            <tr>
+              <th></th>
+              {% for day in days %}<th>{{ day[:3] }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for et_hour, slot_label in available_slots %}
+            <tr>
+              <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_label }}</td>
+              {% for day in days %}
+              <td class="slot" data-day="{{ day }}" data-time="{{ slot_label }}"></td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="hint">No coach availability has been entered yet. Check back soon.</p>
+      {% endif %}
+      <input type="hidden" name="availability" id="availability-data" value="{}" />
+    </section>
+
+    <!-- ── Notes ─────────────────────────────────────────────── -->
+    <section>
+      <h2>Availability Notes</h2>
+      <p class="hint">Anything the coach should know — recurring exceptions, flexibility, preferences.</p>
+      <textarea name="notes" rows="4" placeholder="e.g. I'm flexible on Fridays but prefer not before 8 AM local time."></textarea>
+    </section>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+</div>
+
+<script>
+// ── Timezone conversion ───────────────────────────────────────
+const tzSelect = document.getElementById('timezone-select');
+const tzLabel  = document.getElementById('tz-label');
+
+function etToLocalHour(etHour, tz) {
+  const now = new Date();
+  const etDate  = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const tzDate  = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const offsetH = Math.round((tzDate - etDate) / 3600000);
+  return ((etHour + offsetH) % 24 + 24) % 24;
+}
+
+function fmtHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h < 12)  return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+}
+
+tzSelect.addEventListener('change', function () {
+  const tz = this.value;
+  if (!tz) return;
+  const label = this.options[this.selectedIndex].text;
+  tzLabel.textContent = label;
+  try {
+    document.querySelectorAll('.time-label[data-et-hour]').forEach(td => {
+      td.textContent = fmtHour(etToLocalHour(parseInt(td.dataset.etHour), tz));
+    });
+  } catch (e) { /* unsupported tz */ }
+});
+
+// ── Country ranking ───────────────────────────────────────────
+const pool        = document.getElementById('country-pool');
+const rankedList  = document.getElementById('ranked-list');
+const rankedInput = document.getElementById('countries-ranked');
+const emptyMsg    = document.getElementById('ranker-empty');
+
+function syncRankedInput() {
+  const countries = Array.from(rankedList.querySelectorAll('li')).map(li => li.dataset.country);
+  rankedInput.value = JSON.stringify(countries);
+  emptyMsg.style.display = countries.length ? 'none' : '';
+}
+
+function makeDraggable(li) {
+  li.draggable = true;
+  li.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    li.classList.add('dragging');
+  });
+  li.addEventListener('dragend', () => {
+    li.classList.remove('dragging');
+    syncRankedInput();
+  });
+  li.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = rankedList.querySelector('.dragging');
+    if (!dragging || dragging === li) return;
+    const rect = li.getBoundingClientRect();
+    if (e.clientY < rect.top + rect.height / 2) rankedList.insertBefore(dragging, li);
+    else li.after(dragging);
+  });
+}
+
+function addToRanked(country) {
+  const li = document.createElement('li');
+  li.dataset.country = country;
+  li.innerHTML = `
+    <span class="drag-handle" aria-hidden="true">⠿</span>
+    <span class="country-name">${country}</span>
+    <button type="button" class="remove-btn" aria-label="Remove ${country}">×</button>
+  `;
+  li.querySelector('.remove-btn').addEventListener('click', () => removeFromRanked(li, country));
+  makeDraggable(li);
+  rankedList.appendChild(li);
+  syncRankedInput();
+}
+
+function removeFromRanked(li, country) {
+  rankedList.removeChild(li);
+  pool.querySelector(`.chip[data-country="${CSS.escape(country)}"]`).style.display = '';
+  syncRankedInput();
+}
+
+pool.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.style.display = 'none';
+    addToRanked(chip.dataset.country);
+  });
+});
+
+// ── Availability grid (3-state preference) ───────────────────
+const PREF_STATES = [null, 'pref-first', 'pref-second', 'pref-third'];
+const grid        = document.getElementById('student-grid');
+const avInput     = document.getElementById('availability-data');
+
+if (grid) {
+  const avData = {};
+  grid.querySelectorAll('.slot').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const key     = `${cell.dataset.day}|${cell.dataset.time}`;
+      const current = avData[key] || null;
+      const next    = PREF_STATES[(PREF_STATES.indexOf(current) + 1) % PREF_STATES.length];
+      cell.classList.remove(...PREF_STATES.filter(Boolean));
+      if (next) { cell.classList.add(next); avData[key] = next; }
+      else       { delete avData[key]; }
+      avInput.value = JSON.stringify(avData);
+    });
+  });
+}
+</script>
+{% endblock %}

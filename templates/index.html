@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Coach Matching — Home{% endblock %}
+{% block content %}
+<div class="card center">
+  <h1>Coach Matching</h1>
+  <p>Choose your role to get started.</p>
+  <div class="role-buttons">
+    <a href="{{ url_for('student_form') }}" class="btn btn-primary">I'm a Student</a>
+    <a href="{{ url_for('coach_form') }}" class="btn btn-secondary">I'm a Coach</a>
+  </div>
+</div>
+{% endblock %}

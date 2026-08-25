@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Admin — Submissions{% endblock %}
+{% block content %}
+<div class="card wide">
+  <h1>Admin: Submissions</h1>
+
+  <h2>Coaches ({{ coaches | length }})</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th><th>Availability</th></tr>
+    </thead>
+    <tbody>
+      {% for c in coaches %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.email }}</td>
+        <td>{{ c.country }}</td>
+        <td>{{ c.timezone }}</td>
+        <td>{{ c.updated_at }}</td>
+        <td>
+          <details>
+            <summary>View grid</summary>
+            {% set av = c.availability | from_json %}
+            <div class="mini-grid">
+              {% for day in days %}
+              <div class="mini-day">
+                <strong>{{ day[:3] }}</strong>
+                {% for slot in time_slots %}
+                {% set key = day ~ "|" ~ slot %}
+                {% if av.get(key) %}
+                <span class="mini-slot {{ av[key] }}">{{ slot }}</span>
+                {% endif %}
+                {% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+          </details>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No coach submissions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Students ({{ students | length }})</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Accent Preferences</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Matches</th></tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      {% set ranked = s.countries | from_json %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.email }}</td>
+        <td>
+          <ol class="ranked-display">
+            {% for c in ranked %}<li>{{ c }}</li>{% endfor %}
+          </ol>
+        </td>
+        <td>{{ s.timezone }}</td>
+        <td>{{ s.notes or '—' }}</td>
+        <td>{{ s.created_at }}</td>
+        <td>
+          <details>
+            <summary>View grid</summary>
+            {% set av = s.availability | from_json %}
+            <div class="mini-grid">
+              {% for day in days %}
+              <div class="mini-day">
+                <strong>{{ day[:3] }}</strong>
+                {% for slot in time_slots %}
+                {% set key = day ~ "|" ~ slot %}
+                {% if av.get(key) %}
+                <span class="mini-slot {{ av[key] }}">{{ slot }}</span>
+                {% endif %}
+                {% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+          </details>
+        </td>
+        <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">No student submissions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

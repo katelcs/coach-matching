@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "coach-matching",
+      "runtimeExecutable": "/Users/katebarrios/Documents/GitHub/coach-matching/venv/bin/python",
+      "runtimeArgs": ["app.py"],
+      "port": 5050,
+      "cwd": "/Users/katebarrios/Documents/GitHub/coach-matching",
+      "env": {
+        "OAUTHLIB_INSECURE_TRANSPORT": "1",
+        "GOOGLE_CLIENT_ID": "placeholder",
+        "GOOGLE_CLIENT_SECRET": "placeholder"
+      }
+    }
+  ]
+}

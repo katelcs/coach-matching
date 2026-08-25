@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Coach Form{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Coach Availability Form</h1>
+  <p>Logged in as <strong>{{ name }}</strong> ({{ email }})</p>
+
+  <form method="POST" action="{{ url_for('coach_submit') }}">
+    <section>
+      <h2>Your Info</h2>
+      <label>Your Timezone
+        <select name="timezone" required>
+          <option value="">Select timezone…</option>
+          {% for tz_val, tz_label in timezones %}
+          <option value="{{ tz_val }}">{{ tz_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Your Country / Accent
+        <select name="country" required>
+          <option value="">Select country…</option>
+          {% for country in countries %}
+          <option value="{{ country }}" {% if country == prefill_country %}selected{% endif %}>{{ country }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </section>
+
+    <section>
+      <h2>Weekly Availability</h2>
+      <p class="hint">Click each cell to cycle through: <span class="legend definite">Definite</span> → <span class="legend maybe">Maybe</span> → <span class="legend unavailable-legend">Unavailable</span> → (clear).</p>
+      <div class="grid-wrapper">
+        <table class="availability-grid" id="coach-grid">
+          <thead>
+            <tr>
+              <th></th>
+              {% for day in days %}<th>{{ day[:3] }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in time_slots %}
+            <tr>
+              <td class="time-label">{{ slot }}</td>
+              {% for day in days %}
+              <td class="slot" data-day="{{ day }}" data-time="{{ slot }}"></td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <input type="hidden" name="availability" id="availability-data" />
+    </section>
+
+    <button type="submit" class="btn btn-primary">Save Availability</button>
+  </form>
+</div>
+
+<script>
+  const STATES = [null, "definite", "maybe", "unavailable"];
+  const grid = document.getElementById("coach-grid");
+  const hiddenInput = document.getElementById("availability-data");
+  const cellState = {};
+
+  const prefill = JSON.parse('{{ prefill_availability | safe }}');
+  Object.entries(prefill).forEach(([key, val]) => {
+    cellState[key] = val;
+  });
+
+  function applyState(cell, state) {
+    cell.classList.remove("definite", "maybe", "unavailable");
+    if (state) cell.classList.add(state);
+  }
+
+  grid.querySelectorAll(".slot").forEach(cell => {
+    const key = `${cell.dataset.day}|${cell.dataset.time}`;
+    if (cellState[key]) applyState(cell, cellState[key]);
+
+    cell.addEventListener("click", () => {
+      const current = cellState[key] || null;
+      const nextIndex = (STATES.indexOf(current) + 1) % STATES.length;
+      const next = STATES[nextIndex];
+      if (next) {
+        cellState[key] = next;
+      } else {
+        delete cellState[key];
+      }
+      applyState(cell, next);
+      hiddenInput.value = JSON.stringify(cellState);
+    });
+  });
+
+  hiddenInput.value = JSON.stringify(cellState);
+</script>
+{% endblock %}
