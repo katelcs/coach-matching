@@ -24,6 +24,9 @@ header {
 .logo { font-weight: 700; font-size: 1.1rem; }
 nav a { color: #c8dff0; text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; }
 nav a:hover { color: white; }
+.nav-user { color: #8ab4d4; font-size: 0.8rem; margin-left: 1.5rem; }
+.nav-logout { color: #f0a8a8 !important; }
+.nav-logout:hover { color: white !important; }
 
 main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
 

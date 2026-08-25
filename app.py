@@ -14,6 +14,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.jinja_env.filters["from_json"] = json.loads
 app.teardown_appcontext(close_db)
 
+
+@app.context_processor
+def inject_user():
+    email = session.get("user_email")
+    return {"current_user": email}
+
 APPROVED_COACH_EMAILS  = os.environ.get("APPROVED_COACH_EMAILS", "").split(",")
 APPROVED_ADMIN_EMAILS  = os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",")
 
@@ -152,6 +158,8 @@ def coach_form():
     if APPROVED_COACH_EMAILS and email not in APPROVED_COACH_EMAILS:
         return render_template("unauthorized.html", email=email)
 
+    session["user_email"] = email
+
     db = get_db()
     existing = db.execute("SELECT availability, country FROM coach_submissions WHERE email = ?", (email,)).fetchone()
     prefill_availability = existing["availability"] if existing else "{}"
@@ -265,7 +273,16 @@ def _require_admin():
     email = resp.json().get("email", "")
     if APPROVED_ADMIN_EMAILS and email not in APPROVED_ADMIN_EMAILS:
         return None, render_template("unauthorized.html", email=email)
+    session["user_email"] = email
     return email, None
+
+
+@app.route("/logout")
+def logout():
+    if google_bp.token:
+        del google_bp.token
+    session.clear()
+    return redirect(url_for("index"))
 
 
 @app.route("/admin")
