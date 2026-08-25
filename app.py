@@ -7,6 +7,10 @@ from database import init_db, get_db, close_db
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
 
+# Trust Railway's HTTPS proxy so OAuth redirects use https://
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 app.jinja_env.filters["from_json"] = json.loads
 app.teardown_appcontext(close_db)
 
