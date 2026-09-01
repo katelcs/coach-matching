@@ -20,8 +20,8 @@ def inject_user():
     email = session.get("user_email")
     return {"current_user": email}
 
-APPROVED_COACH_EMAILS  = os.environ.get("APPROVED_COACH_EMAILS", "").split(",")
-APPROVED_ADMIN_EMAILS  = os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",")
+APPROVED_COACH_EMAILS = [e.strip() for e in os.environ.get("APPROVED_COACH_EMAILS", "").split(",") if e.strip()]
+APPROVED_ADMIN_EMAILS = [e.strip() for e in os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",") if e.strip()]
 
 google_bp = make_google_blueprint(
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
@@ -289,8 +289,10 @@ def _require_admin():
 
 @app.route("/logout")
 def logout():
-    if google_bp.token:
+    try:
         del google_bp.token
+    except Exception:
+        pass
     session.clear()
     return redirect(url_for("index"))
 
