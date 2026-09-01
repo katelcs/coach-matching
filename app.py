@@ -85,7 +85,7 @@ def index():
 
 
 def _coach_covered_slots():
-    """Return the set of ET time-slot labels that at least one coach marked definite/maybe."""
+    """Return the set of 'Day|slot' keys that at least one coach marked definite/maybe."""
     db = get_db()
     coaches = db.execute("SELECT availability FROM coach_submissions").fetchall()
     covered = set()
@@ -93,17 +93,18 @@ def _coach_covered_slots():
         av = json.loads(coach["availability"] or "{}")
         for key, status in av.items():
             if status in ("definite", "maybe") and "|" in key:
-                covered.add(key.split("|", 1)[1])
+                covered.add(key)
     return covered
 
 
 @app.route("/student", methods=["GET", "POST"])
 def student_form():
     covered = _coach_covered_slots()
-    # Pairs of (ET hour int, ET label string) for the grid rows
+    # Rows: only show time slots where at least one coach is available on any day
+    covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
         (h, s) for h, s in zip(ET_HOURS, TIME_SLOTS)
-        if not covered or s in covered
+        if not covered or s in covered_times
     ]
 
     if request.method == "POST":
@@ -125,7 +126,7 @@ def student_form():
                 "student.html",
                 error="Please fill in all required fields.",
                 countries=SPANISH_COUNTRIES, available_slots=available_slots,
-                days=DAYS, timezones=TIMEZONES,
+                days=DAYS, timezones=TIMEZONES, covered_keys=covered,
             )
 
         db = get_db()
@@ -141,7 +142,8 @@ def student_form():
         return render_template("thank_you.html", role="student")
 
     return render_template("student.html", countries=SPANISH_COUNTRIES,
-                           available_slots=available_slots, days=DAYS, timezones=TIMEZONES)
+                           available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
+                           covered_keys=covered)
 
 
 @app.route("/coach/demo")

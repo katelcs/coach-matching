@@ -72,7 +72,10 @@
             <tr>
               <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_label }}</td>
               {% for day in days %}
-              <td class="slot" data-day="{{ day }}" data-time="{{ slot_label }}"></td>
+              {% set key = day ~ "|" ~ slot_label %}
+              <td class="slot {% if key not in covered_keys %}slot-locked{% endif %}"
+                  data-day="{{ day }}" data-time="{{ slot_label }}"
+                  {% if key not in covered_keys %}data-locked="true"{% endif %}></td>
               {% endfor %}
             </tr>
             {% endfor %}
@@ -223,6 +226,7 @@ const avInput     = document.getElementById('availability-data');
 if (grid) {
   const avData = {};
   grid.querySelectorAll('.slot').forEach(cell => {
+    if (cell.dataset.locked) return;
     cell.addEventListener('click', () => {
       const key     = `${cell.dataset.day}|${cell.dataset.time}`;
       const current = avData[key] || null;
