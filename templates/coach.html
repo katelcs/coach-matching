@@ -9,10 +9,10 @@
     <section>
       <h2>Your Info</h2>
       <label>Your Timezone
-        <select name="timezone" required>
+        <select name="timezone" id="timezone-select" required>
           <option value="">Select timezone…</option>
           {% for tz_val, tz_label in timezones %}
-          <option value="{{ tz_val }}">{{ tz_label }}</option>
+          <option value="{{ tz_val }}" {% if tz_val == prefill_timezone %}selected{% endif %}>{{ tz_label }}</option>
           {% endfor %}
         </select>
       </label>
@@ -28,7 +28,14 @@
 
     <section>
       <h2>Weekly Availability</h2>
-      <p class="hint">Click each cell to cycle through: <span class="legend definite">Definite</span> → <span class="legend maybe">Maybe</span> → <span class="legend unavailable-legend">Unavailable</span> → (clear).</p>
+      <p class="hint">
+        Click each cell to cycle through:
+        <span class="legend definite">Definite</span>
+        <span class="legend maybe">Maybe</span>
+        <span class="legend unavailable-legend">Unavailable</span>
+        → (clear).
+        Times shown in <span id="tz-label">Eastern Time (ET)</span>.
+      </p>
       <div class="grid-wrapper">
         <table class="availability-grid" id="coach-grid">
           <thead>
@@ -38,9 +45,9 @@
             </tr>
           </thead>
           <tbody>
-            {% for slot in time_slots %}
+            {% for et_hour, slot in et_hours | zip(time_slots) %}
             <tr>
-              <td class="time-label">{{ slot }}</td>
+              <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot }}</td>
               {% for day in days %}
               <td class="slot" data-day="{{ day }}" data-time="{{ slot }}"></td>
               {% endfor %}
@@ -57,39 +64,78 @@
 </div>
 
 <script>
-  const STATES = [null, "definite", "maybe", "unavailable"];
-  const grid = document.getElementById("coach-grid");
-  const hiddenInput = document.getElementById("availability-data");
-  const cellState = {};
+// ── Timezone conversion ───────────────────────────────────────
+const tzSelect = document.getElementById('timezone-select');
+const tzLabel  = document.getElementById('tz-label');
 
-  const prefill = JSON.parse('{{ prefill_availability | safe }}');
-  Object.entries(prefill).forEach(([key, val]) => {
-    cellState[key] = val;
-  });
+function etToLocalHour(etHour, tz) {
+  const now    = new Date();
+  const etDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const tzDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const offsetH = Math.round((tzDate - etDate) / 3600000);
+  return ((etHour + offsetH) % 24 + 24) % 24;
+}
 
-  function applyState(cell, state) {
-    cell.classList.remove("definite", "maybe", "unavailable");
-    if (state) cell.classList.add(state);
-  }
+function fmtHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h < 12)  return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+}
 
-  grid.querySelectorAll(".slot").forEach(cell => {
-    const key = `${cell.dataset.day}|${cell.dataset.time}`;
-    if (cellState[key]) applyState(cell, cellState[key]);
-
-    cell.addEventListener("click", () => {
-      const current = cellState[key] || null;
-      const nextIndex = (STATES.indexOf(current) + 1) % STATES.length;
-      const next = STATES[nextIndex];
-      if (next) {
-        cellState[key] = next;
-      } else {
-        delete cellState[key];
-      }
-      applyState(cell, next);
-      hiddenInput.value = JSON.stringify(cellState);
+function applyTimezone(tz, label) {
+  tzLabel.textContent = label;
+  try {
+    document.querySelectorAll('.time-label[data-et-hour]').forEach(td => {
+      td.textContent = fmtHour(etToLocalHour(parseInt(td.dataset.etHour), tz));
     });
-  });
+  } catch (e) { /* unsupported tz */ }
+}
 
-  hiddenInput.value = JSON.stringify(cellState);
+tzSelect.addEventListener('change', function () {
+  if (!this.value) return;
+  applyTimezone(this.value, this.options[this.selectedIndex].text);
+});
+
+// Apply prefilled timezone on page load
+if (tzSelect.value) {
+  applyTimezone(tzSelect.value, tzSelect.options[tzSelect.selectedIndex].text);
+}
+
+// ── Availability grid ─────────────────────────────────────────
+const STATES = [null, "definite", "maybe", "unavailable"];
+const grid = document.getElementById("coach-grid");
+const hiddenInput = document.getElementById("availability-data");
+const cellState = {};
+
+const prefill = JSON.parse('{{ prefill_availability | safe }}');
+Object.entries(prefill).forEach(([key, val]) => {
+  cellState[key] = val;
+});
+
+function applyState(cell, state) {
+  cell.classList.remove("definite", "maybe", "unavailable");
+  if (state) cell.classList.add(state);
+}
+
+grid.querySelectorAll(".slot").forEach(cell => {
+  const key = `${cell.dataset.day}|${cell.dataset.time}`;
+  if (cellState[key]) applyState(cell, cellState[key]);
+
+  cell.addEventListener("click", () => {
+    const current = cellState[key] || null;
+    const nextIndex = (STATES.indexOf(current) + 1) % STATES.length;
+    const next = STATES[nextIndex];
+    if (next) {
+      cellState[key] = next;
+    } else {
+      delete cellState[key];
+    }
+    applyState(cell, next);
+    hiddenInput.value = JSON.stringify(cellState);
+  });
+});
+
+hiddenInput.value = JSON.stringify(cellState);
 </script>
 {% endblock %}

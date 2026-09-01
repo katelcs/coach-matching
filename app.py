@@ -12,6 +12,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.jinja_env.filters["from_json"] = json.loads
+app.jinja_env.filters["zip"] = zip
 app.teardown_appcontext(close_db)
 
 
@@ -147,10 +148,10 @@ def student_form():
 def coach_demo():
     """Preview-only route — remove before production."""
     return render_template("coach.html", name="Demo Coach", email="demo@example.com",
-                           time_slots=TIME_SLOTS, days=DAYS, timezones=TIMEZONES,
+                           time_slots=TIME_SLOTS, et_hours=ET_HOURS, days=DAYS, timezones=TIMEZONES,
                            countries=SPANISH_COUNTRIES,
                            prefill_availability='{"Monday|9:00 AM":"definite","Tuesday|10:00 AM":"maybe"}',
-                           prefill_country="Mexico")
+                           prefill_country="Mexico", prefill_timezone="")
 
 
 @app.route("/coach")
@@ -171,15 +172,17 @@ def coach_form():
     session["user_email"] = email
 
     db = get_db()
-    existing = db.execute("SELECT availability, country FROM coach_submissions WHERE email = ?", (email,)).fetchone()
+    existing = db.execute("SELECT availability, country, timezone FROM coach_submissions WHERE email = ?", (email,)).fetchone()
     prefill_availability = existing["availability"] if existing else "{}"
-    prefill_country = existing["country"] if existing else ""
+    prefill_country      = existing["country"]       if existing else ""
+    prefill_timezone     = existing["timezone"]      if existing else ""
 
     return render_template("coach.html", name=user_info.get("name", ""), email=email,
-                           time_slots=TIME_SLOTS, days=DAYS, timezones=TIMEZONES,
+                           time_slots=TIME_SLOTS, et_hours=ET_HOURS, days=DAYS, timezones=TIMEZONES,
                            countries=SPANISH_COUNTRIES,
                            prefill_availability=prefill_availability,
-                           prefill_country=prefill_country)
+                           prefill_country=prefill_country,
+                           prefill_timezone=prefill_timezone)
 
 
 @app.route("/coach/submit", methods=["POST"])
