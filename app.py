@@ -107,6 +107,14 @@ def student_form():
         if not covered or s in covered_times
     ]
 
+    db = get_db()
+    coach_countries_rows = db.execute(
+        "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != ''"
+    ).fetchall()
+    coach_countries = [r["country"] for r in coach_countries_rows]
+    # Fall back to full list if no coaches have submitted yet
+    available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
+
     if request.method == "POST":
         name                   = request.form.get("name", "").strip()
         email                  = request.form.get("email", "").strip()
@@ -125,7 +133,7 @@ def student_form():
             return render_template(
                 "student.html",
                 error="Please fill in all required fields.",
-                countries=SPANISH_COUNTRIES, available_slots=available_slots,
+                countries=available_countries, available_slots=available_slots,
                 days=DAYS, timezones=TIMEZONES, covered_keys=covered,
             )
 
@@ -141,7 +149,7 @@ def student_form():
         db.commit()
         return render_template("thank_you.html", role="student")
 
-    return render_template("student.html", countries=SPANISH_COUNTRIES,
+    return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
                            covered_keys=covered)
 
