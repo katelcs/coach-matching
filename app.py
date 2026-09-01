@@ -46,7 +46,7 @@ def _fmt_et(h):
 
 ET_HOURS   = list(range(3, 24))          # 3 AM … 11 PM ET; last slot = 11 PM–midnight
 TIME_SLOTS = [_fmt_et(h) for h in ET_HOURS]
-DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
 TIMEZONES = [
     ("America/New_York",              "Eastern Time (ET)"),
