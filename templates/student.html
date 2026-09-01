@@ -12,6 +12,9 @@
       <h2>Your Info</h2>
       <label>Full Name <input type="text" name="name" required /></label>
       <label>Email <input type="email" name="email" required /></label>
+      <label>Where do you live?
+        <input type="text" name="location" placeholder="City, State / Country" required />
+      </label>
       <label>Your Timezone
         <select name="timezone" id="timezone-select" required>
           <option value="">Select timezone…</option>
@@ -19,6 +22,34 @@
           <option value="{{ tz_val }}">{{ tz_label }}</option>
           {% endfor %}
         </select>
+      </label>
+    </section>
+
+    <!-- ── Background ────────────────────────────────────────── -->
+    <section>
+      <h2>Background</h2>
+      <label>What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?
+        <textarea name="motivation" rows="4" required placeholder="Tell us why you're learning Spanish and what you hope to achieve…"></textarea>
+      </label>
+      <label>Previous study experience
+        <textarea name="study_background" rows="4" placeholder="If you have previously studied with the LearnCraft Spanish method, which lesson did you get through? If you have studied Spanish through another method, please tell us a bit about your background."></textarea>
+      </label>
+      <label>Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
+        <p class="hint" style="margin-top:0.2rem">Note: We are NOT experts in learning differences or disability accommodation, but we will try our best to serve your needs within our capabilities.</p>
+        <textarea name="accommodations" rows="3" placeholder="Optional — describe any accommodations that would help you…"></textarea>
+      </label>
+    </section>
+
+    <!-- ── Agreements ────────────────────────────────────────── -->
+    <section>
+      <h2>Agreements</h2>
+      <label class="checkbox-label agreement-label">
+        <input type="checkbox" name="agreement_acknowledged" value="yes" required />
+        <span>I have read the Student Agreement, including the cancellation policy: in order to reschedule a coaching session I must (1) notify my coach in writing at least 24 hours in advance and (2) reschedule the session within 30 days of the original session date.</span>
+      </label>
+      <label class="checkbox-label agreement-label" style="margin-top:0.8rem">
+        <input type="checkbox" name="assessment_acknowledged" value="yes" required />
+        <span>I understand I must complete the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfbX3wqMurz1K_QAegvb0aTryUqnCI8IPp8a4fBuw6qB4Affw/viewform?usp=sf_link" target="_blank" rel="noopener">knowledge assessment</a> in order to begin my coaching sessions.</span>
       </label>
     </section>
 

@@ -106,12 +106,18 @@ def student_form():
     ]
 
     if request.method == "POST":
-        name      = request.form.get("name", "").strip()
-        email     = request.form.get("email", "").strip()
-        timezone  = request.form.get("timezone", "")
-        countries = request.form.get("countries_ranked", "[]")
-        notes     = request.form.get("notes", "").strip()
-        availability = request.form.get("availability", "{}")
+        name                   = request.form.get("name", "").strip()
+        email                  = request.form.get("email", "").strip()
+        location               = request.form.get("location", "").strip()
+        timezone               = request.form.get("timezone", "")
+        countries              = request.form.get("countries_ranked", "[]")
+        motivation             = request.form.get("motivation", "").strip()
+        study_background       = request.form.get("study_background", "").strip()
+        accommodations         = request.form.get("accommodations", "").strip()
+        agreement_acknowledged = request.form.get("agreement_acknowledged", "") == "yes"
+        assessment_acknowledged= request.form.get("assessment_acknowledged", "") == "yes"
+        notes                  = request.form.get("notes", "").strip()
+        availability           = request.form.get("availability", "{}")
 
         if not name or not email or countries == "[]":
             return render_template(
@@ -123,8 +129,12 @@ def student_form():
 
         db = get_db()
         db.execute(
-            "INSERT INTO student_submissions (name, email, timezone, countries, availability, notes) VALUES (?, ?, ?, ?, ?, ?)",
-            (name, email, timezone, countries, availability, notes),
+            """INSERT INTO student_submissions
+               (name, email, location, timezone, countries, motivation, study_background,
+                accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (name, email, location, timezone, countries, motivation, study_background,
+             accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes),
         )
         db.commit()
         return render_template("thank_you.html", role="student")

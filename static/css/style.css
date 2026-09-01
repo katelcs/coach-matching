@@ -267,6 +267,31 @@ textarea {
 
 details summary { cursor: pointer; color: #3a7bd5; font-size: 0.85rem; }
 
+.agreement-label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 400;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  max-width: 560px;
+  cursor: pointer;
+}
+.agreement-label input { margin-top: 3px; flex-shrink: 0; }
+.agreement-label a { color: #3a7bd5; }
+
+.badge-yes, .badge-no {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 1px 2px;
+  white-space: nowrap;
+}
+.badge-yes { background: #d4eddf; color: #1a5c38; }
+.badge-no  { background: #fddede; color: #991b1b; }
+
 /* ── Match view ──────────────────────────────────────────── */
 .back-link { font-size: 0.85rem; color: #3a7bd5; text-decoration: none; display: inline-block; margin-bottom: 0.6rem; }
 .back-link:hover { text-decoration: underline; }

@@ -45,14 +45,20 @@ def init_db():
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS student_submissions (
-            id          SERIAL PRIMARY KEY,
-            name        TEXT NOT NULL,
-            email       TEXT NOT NULL,
-            timezone    TEXT,
-            countries   TEXT,
-            availability TEXT,
-            notes       TEXT,
-            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            id                      SERIAL PRIMARY KEY,
+            name                    TEXT NOT NULL,
+            email                   TEXT NOT NULL,
+            location                TEXT,
+            timezone                TEXT,
+            countries               TEXT,
+            motivation              TEXT,
+            study_background        TEXT,
+            accommodations          TEXT,
+            agreement_acknowledged  BOOLEAN DEFAULT FALSE,
+            assessment_acknowledged BOOLEAN DEFAULT FALSE,
+            availability            TEXT,
+            notes                   TEXT,
+            created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -70,12 +76,22 @@ def init_db():
 
     conn.commit()
 
-    # Migration: add notes if it was missing from an older deploy
-    try:
-        cur.execute("ALTER TABLE student_submissions ADD COLUMN notes TEXT")
-        conn.commit()
-    except psycopg2.errors.DuplicateColumn:
-        conn.rollback()
+    # Migrations for columns added after initial deploy
+    new_columns = [
+        ("notes",                    "TEXT"),
+        ("location",                 "TEXT"),
+        ("motivation",               "TEXT"),
+        ("study_background",         "TEXT"),
+        ("accommodations",           "TEXT"),
+        ("agreement_acknowledged",   "BOOLEAN DEFAULT FALSE"),
+        ("assessment_acknowledged",  "BOOLEAN DEFAULT FALSE"),
+    ]
+    for col, col_type in new_columns:
+        try:
+            cur.execute(f"ALTER TABLE student_submissions ADD COLUMN {col} {col_type}")
+            conn.commit()
+        except psycopg2.errors.DuplicateColumn:
+            conn.rollback()
 
     cur.close()
     conn.close()

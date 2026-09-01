@@ -46,7 +46,7 @@
   <h2>Students ({{ students | length }})</h2>
   <table class="data-table">
     <thead>
-      <tr><th>Name</th><th>Email</th><th>Accent Preferences</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Matches</th></tr>
+      <tr><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Matches</th></tr>
     </thead>
     <tbody>
       {% for s in students %}
@@ -54,10 +54,18 @@
       <tr>
         <td>{{ s.name }}</td>
         <td>{{ s.email }}</td>
+        <td>{{ s.location or '—' }}</td>
         <td>
           <ol class="ranked-display">
             {% for c in ranked %}<li>{{ c }}</li>{% endfor %}
           </ol>
+        </td>
+        <td><details><summary>View</summary>{{ s.motivation or '—' }}</details></td>
+        <td><details><summary>View</summary>{{ s.study_background or '—' }}</details></td>
+        <td>{{ s.accommodations or '—' }}</td>
+        <td>
+          {% if s.agreement_acknowledged %}<span class="badge-yes">✓ Agreement</span>{% else %}<span class="badge-no">✗ Agreement</span>{% endif %}
+          {% if s.assessment_acknowledged %}<span class="badge-yes">✓ Assessment</span>{% else %}<span class="badge-no">✗ Assessment</span>{% endif %}
         </td>
         <td>{{ s.timezone }}</td>
         <td>{{ s.notes or '—' }}</td>
