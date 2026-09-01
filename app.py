@@ -44,7 +44,7 @@ def _fmt_et(h):
     if h == 12:  return "12:00 PM"
     return f"{h - 12}:00 PM"
 
-ET_HOURS   = list(range(4, 24))          # 4 AM … 11 PM ET; last slot = 11 PM–midnight
+ET_HOURS   = list(range(3, 24))          # 3 AM … 11 PM ET; last slot = 11 PM–midnight
 TIME_SLOTS = [_fmt_et(h) for h in ET_HOURS]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
