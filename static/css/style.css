@@ -345,24 +345,10 @@ textarea {
 .slot:hover { background: rgba(68,154,194,0.12); }
 
 .slot-locked {
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 4px,
-    rgba(31,27,22,0.05) 4px,
-    rgba(31,27,22,0.05) 8px
-  );
+  background: rgba(31,27,22,0.12);
   cursor: not-allowed;
-  opacity: 0.5;
 }
-.slot-locked:hover { background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 4px,
-    rgba(31,27,22,0.05) 4px,
-    rgba(31,27,22,0.05) 8px
-  );
-}
+.slot-locked:hover { background: rgba(31,27,22,0.12); }
 
 /* Student preference states */
 .slot.pref-first  { background: #2a9d6a; }
