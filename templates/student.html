@@ -51,12 +51,9 @@
     <section>
       <h2>Weekly Availability</h2>
       <p class="hint">
-        Click each cell to cycle through your preference:
-        <span class="legend pref-first">1st choice</span>
-        <span class="legend pref-second">2nd choice</span>
-        <span class="legend pref-third">3rd choice</span>
-        → clear.
-        Times shown in <span id="tz-label">Eastern Time (ET)</span>.
+        Please click ALL times that you're available for coaching sessions.
+        <span class="legend pref-first">Available</span>
+        &nbsp; Times shown in <span id="tz-label">Eastern Time (ET)</span>.
       </p>
       {% if available_slots %}
       <div class="grid-wrapper">
@@ -218,22 +215,23 @@ pool.querySelectorAll('.chip').forEach(chip => {
   });
 });
 
-// ── Availability grid (3-state preference) ───────────────────
-const PREF_STATES = [null, 'pref-first', 'pref-second', 'pref-third'];
-const grid        = document.getElementById('student-grid');
-const avInput     = document.getElementById('availability-data');
+// ── Availability grid (toggle available/clear) ───────────────
+const grid    = document.getElementById('student-grid');
+const avInput = document.getElementById('availability-data');
 
 if (grid) {
   const avData = {};
   grid.querySelectorAll('.slot').forEach(cell => {
     if (cell.dataset.locked) return;
     cell.addEventListener('click', () => {
-      const key     = `${cell.dataset.day}|${cell.dataset.time}`;
-      const current = avData[key] || null;
-      const next    = PREF_STATES[(PREF_STATES.indexOf(current) + 1) % PREF_STATES.length];
-      cell.classList.remove(...PREF_STATES.filter(Boolean));
-      if (next) { cell.classList.add(next); avData[key] = next; }
-      else       { delete avData[key]; }
+      const key = `${cell.dataset.day}|${cell.dataset.time}`;
+      if (avData[key]) {
+        delete avData[key];
+        cell.classList.remove('pref-first');
+      } else {
+        avData[key] = 'pref-first';
+        cell.classList.add('pref-first');
+      }
       avInput.value = JSON.stringify(avData);
     });
   });
