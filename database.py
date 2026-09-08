@@ -93,5 +93,16 @@ def init_db():
         except psycopg2.errors.DuplicateColumn:
             conn.rollback()
 
+    # Migrations for coach_submissions columns added after initial deploy
+    coach_columns = [
+        ("timezone", "TEXT"),
+    ]
+    for col, col_type in coach_columns:
+        try:
+            cur.execute(f"ALTER TABLE coach_submissions ADD COLUMN {col} {col_type}")
+            conn.commit()
+        except psycopg2.errors.DuplicateColumn:
+            conn.rollback()
+
     cur.close()
     conn.close()
