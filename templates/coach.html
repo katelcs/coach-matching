@@ -45,7 +45,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for et_hour, slot in et_hours | zip(time_slots) %}
+            {% for et_hour, slot in slot_pairs %}
             <tr>
               <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot }}</td>
               {% for day in days %}

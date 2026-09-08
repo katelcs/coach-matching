@@ -12,7 +12,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.jinja_env.filters["from_json"] = json.loads
-app.jinja_env.filters["zip"] = zip
 app.teardown_appcontext(close_db)
 
 
@@ -158,7 +157,7 @@ def student_form():
 def coach_demo():
     """Preview-only route — remove before production."""
     return render_template("coach.html", name="Demo Coach", email="demo@example.com",
-                           time_slots=TIME_SLOTS, et_hours=ET_HOURS, days=DAYS, timezones=TIMEZONES,
+                           slot_pairs=list(zip(ET_HOURS, TIME_SLOTS)), days=DAYS, timezones=TIMEZONES,
                            countries=SPANISH_COUNTRIES,
                            prefill_availability='{"Monday|9:00 AM":"definite","Tuesday|10:00 AM":"maybe"}',
                            prefill_country="Mexico", prefill_timezone="")
@@ -188,7 +187,7 @@ def coach_form():
     prefill_timezone     = existing["timezone"]      if existing else ""
 
     return render_template("coach.html", name=user_info.get("name", ""), email=email,
-                           time_slots=TIME_SLOTS, et_hours=ET_HOURS, days=DAYS, timezones=TIMEZONES,
+                           slot_pairs=list(zip(ET_HOURS, TIME_SLOTS)), days=DAYS, timezones=TIMEZONES,
                            countries=SPANISH_COUNTRIES,
                            prefill_availability=prefill_availability,
                            prefill_country=prefill_country,
