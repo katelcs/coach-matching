@@ -15,13 +15,14 @@ app.jinja_env.filters["from_json"] = json.loads
 app.teardown_appcontext(close_db)
 
 
+APPROVED_COACH_EMAILS = [e.strip() for e in os.environ.get("APPROVED_COACH_EMAILS", "").split(",") if e.strip()]
+APPROVED_ADMIN_EMAILS = [e.strip() for e in os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",") if e.strip()]
+
 @app.context_processor
 def inject_user():
     email = session.get("user_email")
-    return {"current_user": email}
-
-APPROVED_COACH_EMAILS = [e.strip() for e in os.environ.get("APPROVED_COACH_EMAILS", "").split(",") if e.strip()]
-APPROVED_ADMIN_EMAILS = [e.strip() for e in os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",") if e.strip()]
+    is_admin = bool(email and (not APPROVED_ADMIN_EMAILS or email in APPROVED_ADMIN_EMAILS))
+    return {"current_user": email, "is_admin": is_admin}
 
 google_bp = make_google_blueprint(
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
