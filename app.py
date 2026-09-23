@@ -2,6 +2,7 @@ import os
 import json
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_dance.contrib.google import make_google_blueprint, google
+from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
 from database import init_db, get_db, close_db
 
 app = Flask(__name__)
@@ -169,7 +170,10 @@ def coach_form():
     if not google.authorized:
         return redirect(url_for("google.login"))
 
-    resp = google.get("/oauth2/v2/userinfo")
+    try:
+        resp = google.get("/oauth2/v2/userinfo")
+    except TokenExpiredError:
+        return redirect(url_for("google.login"))
     if not resp.ok:
         return redirect(url_for("google.login"))
 
@@ -200,7 +204,10 @@ def coach_submit():
     if not google.authorized:
         return redirect(url_for("google.login"))
 
-    resp = google.get("/oauth2/v2/userinfo")
+    try:
+        resp = google.get("/oauth2/v2/userinfo")
+    except TokenExpiredError:
+        return redirect(url_for("google.login"))
     if not resp.ok:
         return redirect(url_for("google.login"))
 
@@ -290,7 +297,10 @@ def _require_admin():
     """Returns the admin's email if authorized, or a redirect response if not."""
     if not google.authorized:
         return None, redirect(url_for("google.login"))
-    resp = google.get("/oauth2/v2/userinfo")
+    try:
+        resp = google.get("/oauth2/v2/userinfo")
+    except TokenExpiredError:
+        return None, redirect(url_for("google.login"))
     if not resp.ok:
         return None, redirect(url_for("google.login"))
     email = resp.json().get("email", "")
