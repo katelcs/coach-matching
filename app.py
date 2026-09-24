@@ -113,8 +113,22 @@ def student_form():
         "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != ''"
     ).fetchall()
     coach_countries = [r["country"] for r in coach_countries_rows]
-    # Fall back to full list if no coaches have submitted yet
     available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
+
+    # Per-country slot coverage for client-side grid filtering
+    coaches_all = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
+    country_slots = {}
+    for coach in coaches_all:
+        country = coach["country"]
+        if not country:
+            continue
+        av = json.loads(coach["availability"] or "{}")
+        for key, status in av.items():
+            if status in ("definite", "maybe") and "|" in key:
+                if country not in country_slots:
+                    country_slots[country] = []
+                if key not in country_slots[country]:
+                    country_slots[country].append(key)
 
     if request.method == "POST":
         name                   = request.form.get("name", "").strip()
@@ -136,6 +150,7 @@ def student_form():
                 error="Please fill in all required fields.",
                 countries=available_countries, available_slots=available_slots,
                 days=DAYS, timezones=TIMEZONES, covered_keys=covered,
+                country_slots=json.dumps(country_slots),
             )
 
         db = get_db()
@@ -152,7 +167,7 @@ def student_form():
 
     return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
-                           covered_keys=covered)
+                           covered_keys=covered, country_slots=json.dumps(country_slots))
 
 
 @app.route("/coach/demo")

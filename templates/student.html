@@ -162,10 +162,15 @@ const rankedList  = document.getElementById('ranked-list');
 const rankedInput = document.getElementById('countries-ranked');
 const emptyMsg    = document.getElementById('ranker-empty');
 
+function getSelectedCountries() {
+  return Array.from(rankedList.querySelectorAll('li')).map(li => li.dataset.country);
+}
+
 function syncRankedInput() {
-  const countries = Array.from(rankedList.querySelectorAll('li')).map(li => li.dataset.country);
+  const countries = getSelectedCountries();
   rankedInput.value = JSON.stringify(countries);
   emptyMsg.style.display = countries.length ? 'none' : '';
+  updateGridForCountries(countries);
 }
 
 function makeDraggable(li) {
@@ -215,15 +220,39 @@ pool.querySelectorAll('.chip').forEach(chip => {
   });
 });
 
-// ── Availability grid (toggle available/clear) ───────────────
-const grid    = document.getElementById('student-grid');
-const avInput = document.getElementById('availability-data');
+// ── Availability grid (country-filtered toggle) ──────────────
+const grid         = document.getElementById('student-grid');
+const avInput      = document.getElementById('availability-data');
+const countrySlots = JSON.parse('{{ country_slots | safe }}');
+const avData       = {};
+
+function updateGridForCountries(selectedCountries) {
+  if (!grid) return;
+  let union = null;
+  if (selectedCountries.length > 0) {
+    union = new Set();
+    selectedCountries.forEach(c => {
+      if (countrySlots[c]) countrySlots[c].forEach(k => union.add(k));
+    });
+  }
+  grid.querySelectorAll('.slot').forEach(cell => {
+    if (cell.dataset.locked) return;
+    const key = `${cell.dataset.day}|${cell.dataset.time}`;
+    const shouldLock = union !== null && !union.has(key);
+    cell.classList.toggle('slot-locked', shouldLock);
+    if (shouldLock && avData[key]) {
+      delete avData[key];
+      cell.classList.remove('pref-first');
+    }
+  });
+  avInput.value = JSON.stringify(avData);
+}
 
 if (grid) {
-  const avData = {};
   grid.querySelectorAll('.slot').forEach(cell => {
     if (cell.dataset.locked) return;
     cell.addEventListener('click', () => {
+      if (cell.classList.contains('slot-locked')) return;
       const key = `${cell.dataset.day}|${cell.dataset.time}`;
       if (avData[key]) {
         delete avData[key];
