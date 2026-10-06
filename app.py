@@ -343,8 +343,13 @@ def admin():
     db = get_db()
     students = db.execute("SELECT * FROM student_submissions ORDER BY created_at DESC").fetchall()
     coaches = db.execute("SELECT * FROM coach_submissions ORDER BY updated_at DESC").fetchall()
+    coaches_json = json.dumps([{
+        "name": c["name"], "email": c["email"],
+        "country": c["country"] or "", "timezone": c["timezone"] or "",
+        "availability": c["availability"] or "{}",
+    } for c in coaches])
     return render_template("admin.html", students=students, coaches=coaches,
-                           days=DAYS, time_slots=TIME_SLOTS)
+                           coaches_json=coaches_json, days=DAYS, time_slots=TIME_SLOTS)
 
 
 @app.route("/admin/coach-slots/<coach_email>")

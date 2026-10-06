@@ -5,57 +5,40 @@
   <h1>Admin: Submissions</h1>
 
   <h2>Coaches ({{ coaches | length }})</h2>
-  <table class="data-table">
+
+  <!-- Combined coverage grid -->
+  <p class="hint" style="margin-bottom:var(--space-2)">All coaches combined — number = coaches covering that slot. Click a coach row to see their individual grid.</p>
+  <div class="grid-wrapper" style="margin-bottom:var(--space-4)">
+    <table class="availability-grid admin-av-grid" id="combined-grid"></table>
+  </div>
+
+  <!-- Coaches table -->
+  <table class="data-table" id="coaches-table">
     <thead>
-      <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th><th>Availability</th></tr>
+      <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th></tr>
     </thead>
     <tbody>
       {% for c in coaches %}
-      <tr>
+      <tr class="coach-row" data-email="{{ c.email }}" style="cursor:pointer">
         <td>{{ c.name }}</td>
         <td>{{ c.email }}</td>
         <td>{{ c.country }}</td>
         <td>{{ c.timezone }}</td>
         <td>{{ c.updated_at }}</td>
-        <td>
-          <details>
-            <summary>View grid</summary>
-            {% set av = c.availability | from_json %}
-            <div class="grid-wrapper" style="margin-top:8px">
-              <table class="availability-grid admin-av-grid">
-                <thead>
-                  <tr>
-                    <th></th>
-                    {% for day in days %}<th>{{ day[:3] }}</th>{% endfor %}
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for slot in time_slots %}
-                  {% set ns = namespace(has_data=false) %}
-                  {% for day in days %}
-                  {% if av.get(day ~ "|" ~ slot) in ['definite', 'maybe'] %}{% set ns.has_data = true %}{% endif %}
-                  {% endfor %}
-                  {% if ns.has_data %}
-                  <tr>
-                    <td class="time-label">{{ slot }}</td>
-                    {% for day in days %}
-                    {% set key = day ~ "|" ~ slot %}
-                    <td class="slot admin-slot {{ av.get(key, '') }}"></td>
-                    {% endfor %}
-                  </tr>
-                  {% endif %}
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        </td>
       </tr>
       {% else %}
-      <tr><td colspan="6">No coach submissions yet.</td></tr>
+      <tr><td colspan="5">No coach submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <!-- Selected coach detail grid -->
+  <div id="coach-detail" hidden>
+    <h3 id="coach-detail-title" style="margin-top:var(--space-4);margin-bottom:var(--space-2);font-family:var(--font-sans);font-size:0.95rem;font-weight:600"></h3>
+    <div class="grid-wrapper">
+      <table class="availability-grid admin-av-grid" id="coach-detail-grid"></table>
+    </div>
+  </div>
 
   <h2>Students ({{ students | length }})</h2>
   <table class="data-table">
@@ -129,6 +112,68 @@
 </div>
 
 <script>
+// ── Coach availability grids ──────────────────────────────────
+const DAYS       = {{ days | tojson }};
+const TIME_SLOTS = {{ time_slots | tojson }};
+const COACHES    = {{ coaches_json | safe }};
+
+function renderAvGrid(tableEl, getCellFn) {
+  let html = '<thead><tr><th></th>';
+  DAYS.forEach(d => html += `<th>${d.slice(0,3)}</th>`);
+  html += '</tr></thead><tbody>';
+  TIME_SLOTS.forEach(slot => {
+    let rowCells = '', hasData = false;
+    DAYS.forEach(day => {
+      const {td, data} = getCellFn(`${day}|${slot}`);
+      rowCells += td;
+      if (data) hasData = true;
+    });
+    if (hasData) html += `<tr><td class="time-label">${slot}</td>${rowCells}</tr>`;
+  });
+  html += '</tbody>';
+  tableEl.innerHTML = html;
+}
+
+// Combined grid
+const combined = {};
+COACHES.forEach(coach => {
+  const av = JSON.parse(coach.availability || '{}');
+  Object.entries(av).forEach(([key, status]) => {
+    if (status === 'definite' || status === 'maybe') {
+      if (!combined[key]) combined[key] = {definite: 0, maybe: 0};
+      combined[key][status]++;
+    }
+  });
+});
+
+renderAvGrid(document.getElementById('combined-grid'), key => {
+  const c = combined[key];
+  if (!c) return {td: '<td class="slot admin-slot"></td>', data: false};
+  const cls = c.definite > 0 ? 'definite' : 'maybe';
+  const n   = c.definite + c.maybe;
+  return {td: `<td class="slot admin-slot ${cls}" title="${n} coach(es)">${n > 1 ? `<span class="slot-count">${n}</span>` : ''}</td>`, data: true};
+});
+
+// Coach row → individual grid
+document.querySelectorAll('.coach-row').forEach(row => {
+  row.addEventListener('click', () => {
+    document.querySelectorAll('.coach-row').forEach(r => r.classList.remove('selected-coach'));
+    row.classList.add('selected-coach');
+    const coach = COACHES.find(c => c.email === row.dataset.email);
+    const av    = JSON.parse(coach.availability || '{}');
+    document.getElementById('coach-detail-title').textContent =
+      `${coach.name} · ${coach.country} · ${coach.timezone}`;
+    renderAvGrid(document.getElementById('coach-detail-grid'), key => {
+      const s = av[key];
+      if (!s || s === 'unavailable') return {td: '<td class="slot admin-slot"></td>', data: false};
+      return {td: `<td class="slot admin-slot ${s}"></td>`, data: true};
+    });
+    document.getElementById('coach-detail').hidden = false;
+    document.getElementById('coach-detail').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+});
+
+// ── Assignment dropdowns ──────────────────────────────────────
 async function loadSlots(coachEmail, timeSelect, selectedTime) {
   timeSelect.innerHTML = '<option value="">— Select time —</option>';
   if (!coachEmail) return;

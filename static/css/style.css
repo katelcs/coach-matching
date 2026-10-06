@@ -749,3 +749,14 @@ details summary:hover { text-decoration: underline; }
   margin-left: 4px;
   color: #2a9d6a;
 }
+
+.slot-count {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  pointer-events: none;
+}
+
+.coach-row:hover td { background: rgba(68,154,194,0.08) !important; }
+.coach-row.selected-coach td { background: rgba(68,154,194,0.14) !important; border-bottom-color: var(--cobalt); }
