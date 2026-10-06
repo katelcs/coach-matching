@@ -721,3 +721,31 @@ details summary:hover { text-decoration: underline; }
 .slot-table .mini-slot { display: inline-block; padding: 1px 8px; }
 
 .no-overlap { font-size: 0.82rem; color: var(--steel); margin-top: var(--space-2); }
+
+/* ── Admin availability grid (read-only) ───────────────────── */
+
+.admin-av-grid { min-width: 280px; }
+
+.admin-slot {
+  width: 40px;
+  height: 22px;
+  cursor: default;
+}
+.admin-slot:hover { background: inherit !important; }
+.admin-slot.definite { background: #2a9d6a; }
+.admin-slot.maybe    { background: var(--cobalt); }
+
+/* ── Assignment dropdowns ───────────────────────────────────── */
+
+.assign-select {
+  max-width: 150px;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.assign-status {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  margin-left: 4px;
+  color: #2a9d6a;
+}

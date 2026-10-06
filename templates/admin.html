@@ -21,18 +21,32 @@
           <details>
             <summary>View grid</summary>
             {% set av = c.availability | from_json %}
-            <div class="mini-grid">
-              {% for day in days %}
-              <div class="mini-day">
-                <strong>{{ day[:3] }}</strong>
-                {% for slot in time_slots %}
-                {% set key = day ~ "|" ~ slot %}
-                {% if av.get(key) %}
-                <span class="mini-slot {{ av[key] }}">{{ slot }}</span>
-                {% endif %}
-                {% endfor %}
-              </div>
-              {% endfor %}
+            <div class="grid-wrapper" style="margin-top:8px">
+              <table class="availability-grid admin-av-grid">
+                <thead>
+                  <tr>
+                    <th></th>
+                    {% for day in days %}<th>{{ day[:3] }}</th>{% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for slot in time_slots %}
+                  {% set ns = namespace(has_data=false) %}
+                  {% for day in days %}
+                  {% if av.get(day ~ "|" ~ slot) in ['definite', 'maybe'] %}{% set ns.has_data = true %}{% endif %}
+                  {% endfor %}
+                  {% if ns.has_data %}
+                  <tr>
+                    <td class="time-label">{{ slot }}</td>
+                    {% for day in days %}
+                    {% set key = day ~ "|" ~ slot %}
+                    <td class="slot admin-slot {{ av.get(key, '') }}"></td>
+                    {% endfor %}
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
           </details>
         </td>
@@ -46,7 +60,7 @@
   <h2>Students ({{ students | length }})</h2>
   <table class="data-table">
     <thead>
-      <tr><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Matches</th></tr>
+      <tr><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Assigned Coach</th><th>Session Time</th><th>Matches</th></tr>
     </thead>
     <tbody>
       {% for s in students %}
@@ -89,12 +103,91 @@
             </div>
           </details>
         </td>
+        <td>
+          <select class="coach-select assign-select"
+                  data-student-id="{{ s.id }}"
+                  data-assigned-time="{{ s.assigned_time or '' }}">
+            <option value="">— Select coach —</option>
+            {% for c in coaches %}
+            <option value="{{ c.email }}" {% if c.email == s.assigned_coach %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          <select class="time-select assign-select" data-student-id="{{ s.id }}">
+            <option value="">— Select time —</option>
+          </select>
+          <span class="assign-status" data-student-id="{{ s.id }}"></span>
+        </td>
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="8">No student submissions yet.</td></tr>
+      <tr><td colspan="15">No student submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+<script>
+async function loadSlots(coachEmail, timeSelect, selectedTime) {
+  timeSelect.innerHTML = '<option value="">— Select time —</option>';
+  if (!coachEmail) return;
+  const resp = await fetch(`/admin/coach-slots/${encodeURIComponent(coachEmail)}`);
+  const slots = await resp.json();
+  slots.forEach(slot => {
+    const [day, time] = slot.split('|');
+    const opt = document.createElement('option');
+    opt.value = slot;
+    opt.textContent = `${day.substring(0,3)} ${time}`;
+    if (slot === selectedTime) opt.selected = true;
+    timeSelect.appendChild(opt);
+  });
+  // If previously assigned time is no longer in coach slots, add it as a placeholder
+  if (selectedTime && !slots.includes(selectedTime)) {
+    const [day, time] = selectedTime.split('|');
+    const opt = document.createElement('option');
+    opt.value = selectedTime;
+    opt.textContent = `${day.substring(0,3)} ${time} (assigned)`;
+    opt.selected = true;
+    timeSelect.appendChild(opt);
+  }
+}
+
+async function saveAssignment(studentId, coachEmail, assignedTime, statusEl) {
+  statusEl.textContent = '…';
+  try {
+    const resp = await fetch('/admin/assign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({student_id: studentId, coach_email: coachEmail, assigned_time: assignedTime})
+    });
+    const data = await resp.json();
+    statusEl.textContent = data.ok ? '✓' : '✗';
+    setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  } catch {
+    statusEl.textContent = '✗';
+  }
+}
+
+document.querySelectorAll('.coach-select').forEach(coachSelect => {
+  const studentId  = coachSelect.dataset.studentId;
+  const savedTime  = coachSelect.dataset.assignedTime;
+  const timeSelect = document.querySelector(`.time-select[data-student-id="${studentId}"]`);
+  const statusEl   = document.querySelector(`.assign-status[data-student-id="${studentId}"]`);
+
+  // Load slots for already-assigned coach on page load
+  if (coachSelect.value) {
+    loadSlots(coachSelect.value, timeSelect, savedTime);
+  }
+
+  coachSelect.addEventListener('change', function () {
+    loadSlots(this.value, timeSelect, null);
+  });
+
+  timeSelect.addEventListener('change', function () {
+    if (!coachSelect.value || !this.value) return;
+    saveAssignment(studentId, coachSelect.value, this.value, statusEl);
+  });
+});
+</script>
 {% endblock %}

@@ -347,6 +347,74 @@ def admin():
                            days=DAYS, time_slots=TIME_SLOTS)
 
 
+@app.route("/admin/coach-slots/<coach_email>")
+def admin_coach_slots(coach_email):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    db = get_db()
+    coach = db.execute(
+        "SELECT availability FROM coach_submissions WHERE email = ?", (coach_email,)
+    ).fetchone()
+    if not coach:
+        return jsonify([])
+    av = json.loads(coach["availability"] or "{}")
+    slots = sorted(k for k, v in av.items() if v in ("definite", "maybe"))
+    return jsonify(slots)
+
+
+@app.route("/admin/assign", methods=["POST"])
+def admin_assign():
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    data       = request.json
+    student_id = data.get("student_id")
+    new_coach  = data.get("coach_email", "") or None
+    new_time   = data.get("assigned_time", "") or None
+
+    db = get_db()
+    current = db.execute(
+        "SELECT assigned_coach, assigned_time FROM student_submissions WHERE id = ?",
+        (student_id,)
+    ).fetchone()
+    old_coach = current["assigned_coach"] if current else None
+    old_time  = current["assigned_time"]  if current else None
+
+    # Restore old slot to old coach when the assignment changes
+    if old_coach and old_time and (old_coach != new_coach or old_time != new_time):
+        old_row = db.execute(
+            "SELECT availability FROM coach_submissions WHERE email = ?", (old_coach,)
+        ).fetchone()
+        if old_row:
+            av = json.loads(old_row["availability"] or "{}")
+            av[old_time] = "definite"
+            db.execute(
+                "UPDATE coach_submissions SET availability = ? WHERE email = ?",
+                (json.dumps(av), old_coach)
+            )
+
+    # Remove new slot from new coach
+    if new_coach and new_time:
+        new_row = db.execute(
+            "SELECT availability FROM coach_submissions WHERE email = ?", (new_coach,)
+        ).fetchone()
+        if new_row:
+            av = json.loads(new_row["availability"] or "{}")
+            av.pop(new_time, None)
+            db.execute(
+                "UPDATE coach_submissions SET availability = ? WHERE email = ?",
+                (json.dumps(av), new_coach)
+            )
+
+    db.execute(
+        "UPDATE student_submissions SET assigned_coach = ?, assigned_time = ? WHERE id = ?",
+        (new_coach, new_time, student_id)
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
 @app.route("/admin/match/<int:student_id>")
 def admin_match(student_id):
     email, err = _require_admin()
