@@ -415,6 +415,27 @@ def admin_assign():
     return jsonify({"ok": True})
 
 
+@app.route("/admin/import-student", methods=["POST"])
+def admin_import_student():
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    d = request.json
+    db = get_db()
+    db.execute(
+        """INSERT INTO student_submissions
+           (name, email, location, timezone, countries, motivation, study_background,
+            accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (d.get("name",""), d.get("email",""), d.get("location",""), d.get("timezone",""),
+         d.get("countries","[]"), d.get("motivation",""), d.get("study_background",""),
+         d.get("accommodations",""), d.get("agreement_acknowledged", False),
+         d.get("assessment_acknowledged", False), d.get("availability","{}"), d.get("notes",""))
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
 @app.route("/admin/match/<int:student_id>")
 def admin_match(student_id):
     email, err = _require_admin()
