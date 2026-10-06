@@ -760,3 +760,9 @@ details summary:hover { text-decoration: underline; }
 
 .coach-row:hover td { background: rgba(68,154,194,0.08) !important; }
 .coach-row.selected-coach td { background: rgba(68,154,194,0.14) !important; border-bottom-color: var(--cobalt); }
+
+.assigned-cell { text-align: center; vertical-align: middle; }
+.assigned-check { width: auto; cursor: pointer; accent-color: var(--cobalt); transform: scale(1.2); }
+
+.row-assigned td { background: rgba(31,27,22,0.07) !important; color: var(--slate); }
+.row-assigned td a, .row-assigned td select { opacity: 0.6; }

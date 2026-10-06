@@ -97,6 +97,7 @@ def init_db():
     student_extra_columns = [
         ("assigned_coach", "TEXT"),
         ("assigned_time",  "TEXT"),
+        ("is_assigned",    "BOOLEAN DEFAULT FALSE"),
     ]
     for col, col_type in student_extra_columns:
         try:

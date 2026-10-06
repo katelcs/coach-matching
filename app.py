@@ -420,6 +420,21 @@ def admin_assign():
     return jsonify({"ok": True})
 
 
+@app.route("/admin/student/<int:student_id>/toggle-assigned", methods=["POST"])
+def admin_toggle_assigned(student_id):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    data = request.json
+    db = get_db()
+    db.execute(
+        "UPDATE student_submissions SET is_assigned = ? WHERE id = ?",
+        (bool(data.get("is_assigned")), student_id)
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
 @app.route("/admin/import-student", methods=["POST"])
 def admin_import_student():
     _, err = _require_admin()

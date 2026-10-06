@@ -43,12 +43,17 @@
   <h2>Students ({{ students | length }})</h2>
   <table class="data-table">
     <thead>
-      <tr><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Assigned Coach</th><th>Session Time</th><th>Matches</th></tr>
+      <tr><th>Done</th><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Assigned Coach</th><th>Session Time</th><th>Matches</th></tr>
     </thead>
     <tbody>
       {% for s in students %}
       {% set ranked = s.countries | from_json %}
-      <tr>
+      <tr class="student-row {% if s.is_assigned %}row-assigned{% endif %}" data-student-id="{{ s.id }}">
+        <td class="assigned-cell">
+          <input type="checkbox" class="assigned-check" data-student-id="{{ s.id }}"
+                 {% if s.is_assigned %}checked{% endif %}
+                 aria-label="Mark assigned" />
+        </td>
         <td>{{ s.name }}</td>
         <td>{{ s.email }}</td>
         <td>{{ s.location or '—' }}</td>
@@ -105,7 +110,7 @@
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="15">No student submissions yet.</td></tr>
+      <tr><td colspan="16">No student submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -213,6 +218,21 @@ async function saveAssignment(studentId, coachEmail, assignedTime, statusEl) {
     statusEl.textContent = '✗';
   }
 }
+
+// ── Assigned checkbox ─────────────────────────────────────────
+document.querySelectorAll('.assigned-check').forEach(cb => {
+  cb.addEventListener('change', async function () {
+    const studentId = this.dataset.studentId;
+    const checked   = this.checked;
+    const row       = this.closest('.student-row');
+    row.classList.toggle('row-assigned', checked);
+    await fetch(`/admin/student/${studentId}/toggle-assigned`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({is_assigned: checked})
+    });
+  });
+});
 
 document.querySelectorAll('.coach-select').forEach(coachSelect => {
   const studentId  = coachSelect.dataset.studentId;
