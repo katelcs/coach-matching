@@ -86,21 +86,28 @@ def index():
 
 
 def _coach_covered_slots():
-    """Return the set of 'Day|slot' keys that at least one coach marked definite/maybe."""
+    """Return ({day|slot covered}, {day|slot: [country, ...]})."""
     db = get_db()
-    coaches = db.execute("SELECT availability FROM coach_submissions").fetchall()
+    coaches = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
     covered = set()
+    slot_countries = {}
     for coach in coaches:
+        country = coach["country"] or ""
         av = json.loads(coach["availability"] or "{}")
         for key, status in av.items():
             if status in ("definite", "maybe") and "|" in key:
                 covered.add(key)
-    return covered
+                if country:
+                    if key not in slot_countries:
+                        slot_countries[key] = []
+                    if country not in slot_countries[key]:
+                        slot_countries[key].append(country)
+    return covered, slot_countries
 
 
 @app.route("/student", methods=["GET", "POST"])
 def student_form():
-    covered = _coach_covered_slots()
+    covered, slot_countries = _coach_covered_slots()
     # Rows: only show time slots where at least one coach is available on any day
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
@@ -151,6 +158,7 @@ def student_form():
                 countries=available_countries, available_slots=available_slots,
                 days=DAYS, timezones=TIMEZONES, covered_keys=covered,
                 country_slots=json.dumps(country_slots),
+                slot_countries=slot_countries,
             )
 
         db = get_db()
@@ -167,7 +175,8 @@ def student_form():
 
     return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
-                           covered_keys=covered, country_slots=json.dumps(country_slots))
+                           covered_keys=covered, country_slots=json.dumps(country_slots),
+                           slot_countries=slot_countries)
 
 
 @app.route("/coach/demo")

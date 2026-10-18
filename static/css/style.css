@@ -338,11 +338,23 @@ textarea {
 
 .slot {
   width: 60px;
-  height: 36px;
+  min-height: 36px;
   cursor: pointer;
   transition: background var(--motion-micro) var(--ease);
+  vertical-align: top;
+  padding: 3px 4px;
 }
 .slot:hover { background: rgba(68,154,194,0.12); }
+
+.slot-countries {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  line-height: 1.35;
+  color: rgba(31,27,22,0.55);
+  pointer-events: none;
+}
+.slot.pref-first .slot-countries { color: rgba(255,255,255,0.85); }
 
 .slot-locked {
   background: rgba(31,27,22,0.12);

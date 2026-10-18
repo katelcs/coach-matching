@@ -70,9 +70,14 @@
               <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_label }}</td>
               {% for day in days %}
               {% set key = day ~ "|" ~ slot_label %}
+              {% set countries_here = slot_countries.get(key, []) %}
               <td class="slot {% if key not in covered_keys %}slot-locked{% endif %}"
                   data-day="{{ day }}" data-time="{{ slot_label }}"
-                  {% if key not in covered_keys %}data-locked="true"{% endif %}></td>
+                  {% if key not in covered_keys %}data-locked="true"{% endif %}>
+                {% if countries_here %}
+                <span class="slot-countries">{% for c in countries_here %}{{ c }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span>
+                {% endif %}
+              </td>
               {% endfor %}
             </tr>
             {% endfor %}
