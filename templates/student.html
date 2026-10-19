@@ -5,7 +5,7 @@
   <h1>Student Availability Form</h1>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  <form method="POST" action="{{ url_for('student_form') }}">
+  <form method="POST" action="{{ url_for('student_course', course_slug='private-coaching') }}">
 
     <!-- ── Your Info ─────────────────────────────────────────── -->
     <section>

@@ -40,39 +40,79 @@
     </div>
   </div>
 
-  <h2>Students ({{ students | length }})</h2>
+  <!-- ── Students ───────────────────────────────────────────── -->
+  <h2 style="margin-top:var(--space-6)">Students ({{ students | length }})</h2>
+
+  <!-- Course tabs -->
+  <div class="course-tabs" style="margin-bottom:var(--space-3)">
+    <button class="course-tab active-tab" data-course="all" onclick="switchCourseTab('all')">All</button>
+    {% for slug, cfg in courses.items() %}
+    <button class="course-tab" data-course="{{ slug }}" onclick="switchCourseTab('{{ slug }}')">{{ cfg.name }}</button>
+    {% endfor %}
+  </div>
+
   <table class="data-table">
     <thead>
-      <tr><th>Done</th><th>Name</th><th>Email</th><th>Location</th><th>Accent Preferences</th><th>Motivation</th><th>Background</th><th>Accommodations</th><th>Agreements</th><th>Timezone</th><th>Notes</th><th>Submitted</th><th>Availability</th><th>Assigned Coach</th><th>Session Time</th><th>Matches</th></tr>
+      <tr>
+        <th>Done</th>
+        <th>Course</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Location</th>
+        <th>Accent Preferences</th>
+        <th>Motivation / Goal</th>
+        <th>Background / Study</th>
+        <th>Availability</th>
+        <th>Continue?</th>
+        <th>Accommodations</th>
+        <th>Agreements</th>
+        <th>Timezone</th>
+        <th>Notes</th>
+        <th>Submitted</th>
+        <th>Assigned Coach</th>
+        <th>Session Time</th>
+        <th>Matches</th>
+      </tr>
     </thead>
     <tbody>
       {% for s in students %}
-      {% set ranked = s.countries | from_json %}
-      <tr class="student-row {% if s.is_assigned %}row-assigned{% endif %}" data-student-id="{{ s.id }}">
+      {% set ranked = (s.countries | from_json) if s.countries else [] %}
+      {% set course_name = courses[s.course].name if s.course and s.course in courses else (s.course or 'Private Coaching') %}
+      <tr class="student-row {% if s.is_assigned %}row-assigned{% endif %}"
+          data-student-id="{{ s.id }}"
+          data-course="{{ s.course or 'private-coaching' }}">
         <td class="assigned-cell">
           <input type="checkbox" class="assigned-check" data-student-id="{{ s.id }}"
                  {% if s.is_assigned %}checked{% endif %}
                  aria-label="Mark assigned" />
         </td>
+        <td><span class="course-badge">{{ course_name }}</span></td>
         <td>{{ s.name }}</td>
         <td>{{ s.email }}</td>
         <td>{{ s.location or '—' }}</td>
         <td>
+          {% if ranked %}
           <ol class="ranked-display">
             {% for c in ranked %}<li>{{ c }}</li>{% endfor %}
           </ol>
+          {% else %}—{% endif %}
         </td>
-        <td><details><summary>View</summary>{{ s.motivation or '—' }}</details></td>
-        <td><details><summary>View</summary>{{ s.study_background or '—' }}</details></td>
-        <td>{{ s.accommodations or '—' }}</td>
         <td>
-          {% if s.agreement_acknowledged %}<span class="badge-yes">✓ Agreement</span>{% else %}<span class="badge-no">✗ Agreement</span>{% endif %}
-          {% if s.assessment_acknowledged %}<span class="badge-yes">✓ Assessment</span>{% else %}<span class="badge-no">✗ Assessment</span>{% endif %}
+          {% if s.motivation %}
+          <details><summary>View</summary>{{ s.motivation }}</details>
+          {% else %}—{% endif %}
         </td>
-        <td>{{ s.timezone }}</td>
-        <td>{{ s.notes or '—' }}</td>
-        <td>{{ s.created_at }}</td>
         <td>
+          {% if s.study_background %}
+          <details><summary>View</summary>{{ s.study_background }}</details>
+          {% elif s.previous_study %}
+          <details><summary>View</summary>{{ s.previous_study }}</details>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if s.availability_text %}
+          <details><summary>View</summary>{{ s.availability_text }}</details>
+          {% elif s.availability and s.availability != '{}' %}
           <details>
             <summary>View grid</summary>
             {% set av = s.availability | from_json %}
@@ -90,7 +130,21 @@
               {% endfor %}
             </div>
           </details>
+          {% else %}—{% endif %}
         </td>
+        <td>
+          {% if s.continue_same_coach %}
+          Coach: {{ s.continue_same_coach }}<br>Time: {{ s.continue_same_time or '?' }}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ s.accommodations or '—' }}</td>
+        <td>
+          {% if s.agreement_acknowledged %}<span class="badge-yes">✓ Agreement</span>{% else %}<span class="badge-no">✗ Agreement</span>{% endif %}
+          {% if s.assessment_acknowledged %}<span class="badge-yes">✓ Assessment</span>{% else %}<span class="badge-no">✗ Assessment</span>{% endif %}
+        </td>
+        <td>{{ s.timezone or '—' }}</td>
+        <td>{{ s.notes or '—' }}</td>
+        <td>{{ s.created_at }}</td>
         <td>
           <select class="coach-select assign-select"
                   data-student-id="{{ s.id }}"
@@ -110,7 +164,7 @@
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="16">No student submissions yet.</td></tr>
+      <tr><td colspan="18">No student submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -178,6 +232,16 @@ document.querySelectorAll('.coach-row').forEach(row => {
   });
 });
 
+// ── Course tab filtering ──────────────────────────────────────
+function switchCourseTab(slug) {
+  document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active-tab'));
+  document.querySelector(`.course-tab[data-course="${slug}"]`).classList.add('active-tab');
+  document.querySelectorAll('.student-row').forEach(row => {
+    const rowCourse = row.dataset.course || 'private-coaching';
+    row.style.display = (slug === 'all' || rowCourse === slug) ? '' : 'none';
+  });
+}
+
 // ── Assignment dropdowns ──────────────────────────────────────
 async function loadSlots(coachEmail, timeSelect, selectedTime) {
   timeSelect.innerHTML = '<option value="">— Select time —</option>';
@@ -192,7 +256,6 @@ async function loadSlots(coachEmail, timeSelect, selectedTime) {
     if (slot === selectedTime) opt.selected = true;
     timeSelect.appendChild(opt);
   });
-  // If previously assigned time is no longer in coach slots, add it as a placeholder
   if (selectedTime && !slots.includes(selectedTime)) {
     const [day, time] = selectedTime.split('|');
     const opt = document.createElement('option');
@@ -240,7 +303,6 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
   const timeSelect = document.querySelector(`.time-select[data-student-id="${studentId}"]`);
   const statusEl   = document.querySelector(`.assign-status[data-student-id="${studentId}"]`);
 
-  // Load slots for already-assigned coach on page load
   if (coachSelect.value) {
     loadSlots(coachSelect.value, timeSelect, savedTime);
   }

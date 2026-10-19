@@ -17,7 +17,7 @@
       </a>
       <nav>
         {% if is_admin %}
-        <a href="{{ url_for('student_form') }}">Student</a>
+        <a href="{{ url_for('student_index') }}">Student</a>
         <a href="{{ url_for('coach_form') }}">Coach</a>
         <a href="{{ url_for('admin') }}">Admin</a>
         <span class="nav-user">{{ current_user }}</span>

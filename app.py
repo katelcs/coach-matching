@@ -105,10 +105,140 @@ def _coach_covered_slots():
     return covered, slot_countries
 
 
-@app.route("/student", methods=["GET", "POST"])
-def student_form():
+COURSES = {
+    "private-coaching": {
+        "name": "Private Coaching",
+        "has_grid": True,
+        "has_location": True,
+        "has_timezone": True,
+        "has_ranker": True,
+        "has_motivation": True,
+        "has_study_background": True,
+        "has_previous_study": False,
+        "has_assessment": True,
+        "has_continue": False,
+        "has_availability_text": False,
+        "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?",
+    },
+    "premier-coaching": {
+        "name": "Premier Coaching",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": False,
+        "has_assessment": True,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Availability",
+        "availability_hint": "Please list several different days and times that work for you — the more options, the easier it is to find a good fit.",
+        "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?",
+    },
+    "one-month-challenge": {
+        "name": "One Month Challenge",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": True,
+        "has_assessment": False,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Availability",
+        "availability_hint": "Coaching sessions are on Fridays and Mondays. What times are generally best for you to meet with your coach?",
+        "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this challenge?",
+        "previous_study_label": "If you've taken any LCS lessons, which ones have you completed?",
+    },
+    "subjunctive-challenge": {
+        "name": "Subjunctive Challenge",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": True,
+        "has_assessment": False,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Availability",
+        "availability_hint": "Sessions are typically on Mondays and Fridays. What times are generally best for you to meet?",
+        "motivation_label": "What is your motivation for taking this course and what is your overall fluency goal?",
+        "previous_study_label": "If you've taken any LCS lessons, which ones have you completed?",
+    },
+    "cohort-program": {
+        "name": "Cohort Program",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": False,
+        "has_assessment": False,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Private Session Availability",
+        "availability_hint": "What days and times work best for your private coaching sessions?",
+        "motivation_label": "What is your fluency goal for this program?",
+    },
+    "post-cohort-program": {
+        "name": "Post-Cohort Program",
+        "has_grid": False,
+        "has_location": False,
+        "has_motivation": False,
+        "has_study_background": False,
+        "has_previous_study": False,
+        "has_assessment": False,
+        "has_continue": True,
+        "has_availability_text": True,
+        "availability_label": "New Availability",
+        "availability_hint": "If you'd like a different day or time, please list what works for you.",
+    },
+    "post-subjunctive-challenge": {
+        "name": "Post-Subjunctive Challenge",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": False,
+        "has_assessment": True,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Availability",
+        "availability_hint": "What times work best for you to meet with your coach?",
+        "motivation_label": "What is your motivation for taking this challenge?",
+    },
+    "intensive-program": {
+        "name": "Intensive Program",
+        "has_grid": False,
+        "has_location": True,
+        "has_motivation": True,
+        "has_study_background": False,
+        "has_previous_study": False,
+        "has_assessment": True,
+        "has_continue": False,
+        "has_availability_text": True,
+        "availability_label": "Availability",
+        "availability_hint": "This program meets daily Monday through Friday for 30 minutes. What times work best? Please list multiple options across the week.",
+        "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this program?",
+    },
+}
+
+
+@app.route("/student")
+def student_index():
+    return redirect(url_for("student_course", course_slug="private-coaching"))
+
+
+@app.route("/student/<course_slug>", methods=["GET", "POST"])
+def student_course(course_slug):
+    course_config = COURSES.get(course_slug)
+    if not course_config:
+        return "Course not found", 404
+    if course_slug == "private-coaching":
+        return _student_private(course_config)
+    return _student_generic(course_config, course_slug)
+
+
+def _student_private(course_config):
     covered, slot_countries = _coach_covered_slots()
-    # Rows: only show time slots where at least one coach is available on any day
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
         (h, s) for h, s in zip(ET_HOURS, TIME_SLOTS)
@@ -122,7 +252,6 @@ def student_form():
     coach_countries = [r["country"] for r in coach_countries_rows]
     available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
 
-    # Per-country slot coverage for client-side grid filtering
     coaches_all = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
     country_slots = {}
     for coach in coaches_all:
@@ -137,46 +266,87 @@ def student_form():
                 if key not in country_slots[country]:
                     country_slots[country].append(key)
 
+    error = None
     if request.method == "POST":
-        name                   = request.form.get("name", "").strip()
-        email                  = request.form.get("email", "").strip()
-        location               = request.form.get("location", "").strip()
-        timezone               = request.form.get("timezone", "")
-        countries              = request.form.get("countries_ranked", "[]")
-        motivation             = request.form.get("motivation", "").strip()
-        study_background       = request.form.get("study_background", "").strip()
-        accommodations         = request.form.get("accommodations", "").strip()
-        agreement_acknowledged = request.form.get("agreement_acknowledged", "") == "yes"
-        assessment_acknowledged= request.form.get("assessment_acknowledged", "") == "yes"
-        notes                  = request.form.get("notes", "").strip()
-        availability           = request.form.get("availability", "{}")
+        name                    = request.form.get("name", "").strip()
+        email                   = request.form.get("email", "").strip()
+        location                = request.form.get("location", "").strip()
+        timezone                = request.form.get("timezone", "")
+        countries               = request.form.get("countries_ranked", "[]")
+        motivation              = request.form.get("motivation", "").strip()
+        study_background        = request.form.get("study_background", "").strip()
+        accommodations          = request.form.get("accommodations", "").strip()
+        agreement_acknowledged  = request.form.get("agreement_acknowledged", "") == "yes"
+        assessment_acknowledged = request.form.get("assessment_acknowledged", "") == "yes"
+        notes                   = request.form.get("notes", "").strip()
+        availability            = request.form.get("availability", "{}")
 
         if not name or not email or countries == "[]":
-            return render_template(
-                "student.html",
-                error="Please fill in all required fields.",
-                countries=available_countries, available_slots=available_slots,
-                days=DAYS, timezones=TIMEZONES, covered_keys=covered,
-                country_slots=json.dumps(country_slots),
-                slot_countries=slot_countries,
+            error = "Please fill in all required fields."
+        if not error:
+            db = get_db()
+            db.execute(
+                """INSERT INTO student_submissions
+                   (course, name, email, location, timezone, countries, motivation, study_background,
+                    accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ("private-coaching", name, email, location, timezone, countries, motivation,
+                 study_background, accommodations, agreement_acknowledged, assessment_acknowledged,
+                 availability, notes),
             )
-
-        db = get_db()
-        db.execute(
-            """INSERT INTO student_submissions
-               (name, email, location, timezone, countries, motivation, study_background,
-                accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (name, email, location, timezone, countries, motivation, study_background,
-             accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes),
-        )
-        db.commit()
-        return render_template("thank_you.html", role="student")
+            db.commit()
+            return render_template("thank_you.html", role="student")
 
     return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
                            covered_keys=covered, country_slots=json.dumps(country_slots),
-                           slot_countries=slot_countries)
+                           slot_countries=slot_countries, course_config=course_config, error=error)
+
+
+def _student_generic(course_config, course_slug):
+    error = None
+    if request.method == "POST":
+        name              = request.form.get("name", "").strip()
+        email             = request.form.get("email", "").strip()
+        location          = request.form.get("location", "").strip() if course_config.get("has_location") else ""
+        availability_text = request.form.get("availability_text", "").strip()
+        motivation        = request.form.get("motivation", "").strip() if course_config.get("has_motivation") else ""
+        previous_study    = request.form.get("previous_study", "").strip() if course_config.get("has_previous_study") else ""
+        accommodations    = request.form.get("accommodations", "").strip()
+        agreement_acknowledged  = request.form.get("agreement_acknowledged", "") == "yes"
+        assessment_acknowledged = request.form.get("assessment_acknowledged", "") == "yes"
+        continue_same_coach = request.form.get("continue_same_coach", "")
+        continue_same_time  = request.form.get("continue_same_time", "")
+
+        if not name or not email:
+            error = "Please fill in your name and email."
+        elif course_config.get("has_location") and not location:
+            error = "Please fill in your location."
+        elif course_config.get("has_motivation") and not motivation:
+            error = "Please fill in your goal."
+        elif (course_config.get("has_availability_text") and not availability_text
+              and not (course_config.get("has_continue") and continue_same_time == "yes")):
+            error = "Please fill in your availability."
+
+        if not error:
+            db = get_db()
+            db.execute(
+                """INSERT INTO student_submissions
+                   (course, name, email, location, availability_text, motivation,
+                    previous_study, accommodations, agreement_acknowledged, assessment_acknowledged,
+                    continue_same_coach, continue_same_time)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (course_slug, name, email, location, availability_text, motivation,
+                 previous_study, accommodations, agreement_acknowledged, assessment_acknowledged,
+                 continue_same_coach, continue_same_time)
+            )
+            db.commit()
+            return render_template("thank_you.html", role="student")
+
+    return render_template("student_generic.html",
+                           course_config=course_config,
+                           course_slug=course_slug,
+                           error=error)
 
 
 @app.route("/coach/demo")
@@ -358,7 +528,8 @@ def admin():
         "availability": c["availability"] or "{}",
     } for c in coaches])
     return render_template("admin.html", students=students, coaches=coaches,
-                           coaches_json=coaches_json, days=DAYS, time_slots=TIME_SLOTS)
+                           coaches_json=coaches_json, days=DAYS, time_slots=TIME_SLOTS,
+                           courses=COURSES)
 
 
 @app.route("/admin/coach-slots/<coach_email>")

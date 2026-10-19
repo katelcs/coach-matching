@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ course_config.name }} — Enrollment Form{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ course_config.name }}</h1>
+  <p class="hint" style="margin-bottom:var(--space-4)">Enrollment Form</p>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <form method="POST" action="{{ url_for('student_course', course_slug=course_slug) }}">
+
+    <!-- ── Your Info ─────────────────────────────────────────── -->
+    <section>
+      <h2>Your Info</h2>
+      <label>Full Name <input type="text" name="name" required /></label>
+      <label>Email <input type="email" name="email" required /></label>
+      {% if course_config.has_location %}
+      <label>Where do you live?
+        <input type="text" name="location" placeholder="City, State / Country" required />
+      </label>
+      {% endif %}
+    </section>
+
+    <!-- ── Post-Cohort: Continue questions ──────────────────── -->
+    {% if course_config.has_continue %}
+    <section>
+      <h2>Continuing Your Program</h2>
+      <fieldset>
+        <legend>Would you like to continue with the same coach?</legend>
+        <label class="radio-label"><input type="radio" name="continue_same_coach" value="yes" required /> Yes</label>
+        <label class="radio-label"><input type="radio" name="continue_same_coach" value="no" /> No — I'd like a new coach</label>
+      </fieldset>
+      <fieldset style="margin-top:var(--space-3)">
+        <legend>Would you like to continue at the same day and time?</legend>
+        <label class="radio-label"><input type="radio" name="continue_same_time" value="yes" id="continue-time-yes" required /> Yes</label>
+        <label class="radio-label"><input type="radio" name="continue_same_time" value="no" id="continue-time-no" /> No — I'd like a different time</label>
+      </fieldset>
+    </section>
+    {% endif %}
+
+    <!-- ── Availability ──────────────────────────────────────── -->
+    {% if course_config.has_availability_text %}
+    <section id="availability-section"{% if course_config.has_continue %} style="display:none"{% endif %}>
+      <h2>{{ course_config.availability_label }}</h2>
+      <p class="hint">{{ course_config.availability_hint }}</p>
+      <textarea name="availability_text" rows="5"
+                placeholder="e.g. Mondays 9–11 AM Eastern, Wednesdays after 2 PM Eastern, any time Friday…"
+                {% if not course_config.has_continue %}required{% endif %}></textarea>
+    </section>
+    {% endif %}
+
+    <!-- ── Motivation / Goal ─────────────────────────────────── -->
+    {% if course_config.has_motivation %}
+    <section>
+      <h2>Your Goal</h2>
+      <label>{{ course_config.motivation_label }}
+        <textarea name="motivation" rows="4" required
+                  placeholder="Tell us why you're learning Spanish and what you hope to achieve…"></textarea>
+      </label>
+    </section>
+    {% endif %}
+
+    <!-- ── Previous Study ────────────────────────────────────── -->
+    {% if course_config.has_previous_study %}
+    <section>
+      <h2>Previous Study</h2>
+      <label>{{ course_config.previous_study_label }}
+        <textarea name="previous_study" rows="3"
+                  placeholder="e.g. Completed lessons 1–40, or 'This is my first LCS program'…"></textarea>
+      </label>
+    </section>
+    {% endif %}
+
+    <!-- ── Accommodations ────────────────────────────────────── -->
+    <section>
+      <h2>Accommodations</h2>
+      <label>Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
+        <p class="hint" style="margin-top:0.2rem">Note: We are NOT experts in learning differences or disability accommodation, but we will try our best to serve your needs within our capabilities.</p>
+        <textarea name="accommodations" rows="3" placeholder="Optional — describe any accommodations that would help you…"></textarea>
+      </label>
+    </section>
+
+    <!-- ── Agreements ────────────────────────────────────────── -->
+    <section>
+      <h2>Agreements</h2>
+      <label class="checkbox-label agreement-label">
+        <input type="checkbox" name="agreement_acknowledged" value="yes" required />
+        <span>I have read the <a href="https://drive.google.com/file/d/1azOI1GNnUmvuWPz0ANf_aTKKVyL7LYFO/view" target="_blank" rel="noopener">Student Agreement</a>, including the cancellation policy: in order to reschedule a coaching session I must (1) notify my coach in writing at least 24 hours in advance and (2) reschedule the session within 30 days of the original session date.</span>
+      </label>
+      {% if course_config.has_assessment %}
+      <label class="checkbox-label agreement-label" style="margin-top:0.8rem">
+        <input type="checkbox" name="assessment_acknowledged" value="yes" required />
+        <span>I understand I must complete the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfbX3wqMurz1K_QAegvb0aTryUqnCI8IPp8a4fBuw6qB4Affw/viewform?usp=sf_link" target="_blank" rel="noopener">knowledge assessment</a> in order to begin my coaching sessions.</span>
+      </label>
+      {% endif %}
+    </section>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+</div>
+
+{% if course_config.has_continue %}
+<script>
+// Show availability section only when student wants a new time
+function syncAvailabilitySection() {
+  const noRadio = document.getElementById('continue-time-no');
+  const section = document.getElementById('availability-section');
+  const textarea = section.querySelector('textarea');
+  if (noRadio && noRadio.checked) {
+    section.style.display = '';
+    textarea.required = true;
+  } else {
+    section.style.display = 'none';
+    textarea.required = false;
+  }
+}
+document.querySelectorAll('[name="continue_same_time"]').forEach(r => {
+  r.addEventListener('change', syncAvailabilitySection);
+});
+</script>
+{% endif %}
+{% endblock %}

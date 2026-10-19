@@ -117,5 +117,20 @@ def init_db():
         except psycopg2.errors.DuplicateColumn:
             conn.rollback()
 
+    # Migrations for multi-course fields
+    course_fields = [
+        ("course",              "TEXT"),
+        ("availability_text",   "TEXT"),
+        ("previous_study",      "TEXT"),
+        ("continue_same_coach", "TEXT"),
+        ("continue_same_time",  "TEXT"),
+    ]
+    for col, col_type in course_fields:
+        try:
+            cur.execute(f"ALTER TABLE student_submissions ADD COLUMN {col} {col_type}")
+            conn.commit()
+        except psycopg2.errors.DuplicateColumn:
+            conn.rollback()
+
     cur.close()
     conn.close()
