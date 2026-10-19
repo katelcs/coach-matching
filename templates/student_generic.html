@@ -13,11 +13,17 @@
       <h2>Your Info</h2>
       <label>Full Name <input type="text" name="name" required /></label>
       <label>Email <input type="email" name="email" required /></label>
-      {% if course_config.has_location %}
       <label>Where do you live?
         <input type="text" name="location" placeholder="City, State / Country" required />
       </label>
-      {% endif %}
+      <label>Your Timezone
+        <select name="timezone" id="timezone-select" required>
+          <option value="">Select timezone…</option>
+          {% for tz_val, tz_label in timezones %}
+          <option value="{{ tz_val }}">{{ tz_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
     </section>
 
     <!-- ── Post-Cohort: Continue questions ──────────────────── -->
@@ -37,43 +43,85 @@
     </section>
     {% endif %}
 
-    <!-- ── Availability ──────────────────────────────────────── -->
-    {% if course_config.has_availability_text %}
-    <section id="availability-section"{% if course_config.has_continue %} style="display:none"{% endif %}>
-      <h2>{{ course_config.availability_label }}</h2>
-      <p class="hint">{{ course_config.availability_hint }}</p>
-      <textarea name="availability_text" rows="5"
-                placeholder="e.g. Mondays 9–11 AM Eastern, Wednesdays after 2 PM Eastern, any time Friday…"
-                {% if not course_config.has_continue %}required{% endif %}></textarea>
-    </section>
-    {% endif %}
-
-    <!-- ── Motivation / Goal ─────────────────────────────────── -->
-    {% if course_config.has_motivation %}
+    <!-- ── Accent Preference ──────────────────────────────────── -->
     <section>
-      <h2>Your Goal</h2>
+      <h2>Accent Preference</h2>
+      <p class="hint">Click countries to rank them by preference. Drag to reorder. Your top choice is #1.</p>
+      <div class="ranker">
+        <div class="ranker-pool">
+          <p class="ranker-label">All countries</p>
+          <div id="country-pool">
+            {% for country in countries %}
+            <button type="button" class="chip" data-country="{{ country }}">{{ country }}</button>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="ranker-ranked">
+          <p class="ranker-label">Your preferences <span class="ranker-sub">(drag to reorder)</span></p>
+          <ol id="ranked-list"></ol>
+          <p class="ranker-empty" id="ranker-empty">No countries selected yet.</p>
+        </div>
+      </div>
+      <input type="hidden" name="countries_ranked" id="countries-ranked" value="[]" />
+    </section>
+
+    <!-- ── Weekly Availability ────────────────────────────────── -->
+    <section>
+      <h2>Weekly Availability</h2>
+      <p class="hint">
+        Please click ALL times that you're available for coaching sessions.
+        <span class="legend pref-first">Available</span>
+        &nbsp; Times shown in <span id="tz-label">Eastern Time (ET)</span>.
+      </p>
+      {% if available_slots %}
+      <div class="grid-wrapper">
+        <table class="availability-grid" id="student-grid">
+          <thead>
+            <tr>
+              <th></th>
+              {% for day in days %}<th>{{ day[:3] }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for et_hour, slot_label in available_slots %}
+            <tr>
+              <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_label }}</td>
+              {% for day in days %}
+              {% set key = day ~ "|" ~ slot_label %}
+              {% set countries_here = slot_countries.get(key, []) %}
+              <td class="slot {% if key not in covered_keys %}slot-locked{% endif %}"
+                  data-day="{{ day }}" data-time="{{ slot_label }}"
+                  {% if key not in covered_keys %}data-locked="true"{% endif %}>
+                {% if countries_here %}
+                <span class="slot-countries">{% for c in countries_here %}{{ c }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="hint">No coach availability has been entered yet. Check back soon.</p>
+      {% endif %}
+      <input type="hidden" name="availability" id="availability-data" value="{}" />
+    </section>
+
+    <!-- ── Background ────────────────────────────────────────── -->
+    <section>
+      <h2>Background</h2>
+      {% if course_config.has_motivation %}
       <label>{{ course_config.motivation_label }}
-        <textarea name="motivation" rows="4" required
-                  placeholder="Tell us why you're learning Spanish and what you hope to achieve…"></textarea>
+        <textarea name="motivation" rows="4" required placeholder="Tell us why you're learning Spanish and what you hope to achieve…"></textarea>
       </label>
-    </section>
-    {% endif %}
-
-    <!-- ── Previous Study ────────────────────────────────────── -->
-    {% if course_config.has_previous_study %}
-    <section>
-      <h2>Previous Study</h2>
-      <label>{{ course_config.previous_study_label }}
-        <textarea name="previous_study" rows="3"
-                  placeholder="e.g. Completed lessons 1–40, or 'This is my first LCS program'…"></textarea>
+      {% endif %}
+      {% if course_config.has_previous_study %}
+      <label style="margin-top:var(--space-3)">{{ course_config.previous_study_label }}
+        <textarea name="previous_study" rows="3" placeholder="e.g. Completed lessons 1–40, or 'This is my first LCS program'…"></textarea>
       </label>
-    </section>
-    {% endif %}
-
-    <!-- ── Accommodations ────────────────────────────────────── -->
-    <section>
-      <h2>Accommodations</h2>
-      <label>Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
+      {% endif %}
+      <label style="margin-top:var(--space-3)">Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
         <p class="hint" style="margin-top:0.2rem">Note: We are NOT experts in learning differences or disability accommodation, but we will try our best to serve your needs within our capabilities.</p>
         <textarea name="accommodations" rows="3" placeholder="Optional — describe any accommodations that would help you…"></textarea>
       </label>
@@ -98,24 +146,145 @@
   </form>
 </div>
 
-{% if course_config.has_continue %}
 <script>
-// Show availability section only when student wants a new time
-function syncAvailabilitySection() {
-  const noRadio = document.getElementById('continue-time-no');
-  const section = document.getElementById('availability-section');
-  const textarea = section.querySelector('textarea');
-  if (noRadio && noRadio.checked) {
-    section.style.display = '';
-    textarea.required = true;
-  } else {
-    section.style.display = 'none';
-    textarea.required = false;
-  }
+// ── Timezone conversion ───────────────────────────────────────
+const tzSelect = document.getElementById('timezone-select');
+const tzLabel  = document.getElementById('tz-label');
+
+function etToLocalHour(etHour, tz) {
+  const now    = new Date();
+  const etDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const tzDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const offsetH = Math.round((tzDate - etDate) / 3600000);
+  return ((etHour + offsetH) % 24 + 24) % 24;
 }
-document.querySelectorAll('[name="continue_same_time"]').forEach(r => {
-  r.addEventListener('change', syncAvailabilitySection);
+
+function fmtHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h < 12)  return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+}
+
+tzSelect.addEventListener('change', function () {
+  const tz = this.value;
+  if (!tz) return;
+  tzLabel.textContent = this.options[this.selectedIndex].text;
+  try {
+    document.querySelectorAll('.time-label[data-et-hour]').forEach(td => {
+      td.textContent = fmtHour(etToLocalHour(parseInt(td.dataset.etHour), tz));
+    });
+  } catch (e) { /* unsupported tz */ }
 });
+
+// ── Country ranking ───────────────────────────────────────────
+const pool        = document.getElementById('country-pool');
+const rankedList  = document.getElementById('ranked-list');
+const rankedInput = document.getElementById('countries-ranked');
+const emptyMsg    = document.getElementById('ranker-empty');
+
+function getSelectedCountries() {
+  return Array.from(rankedList.querySelectorAll('li')).map(li => li.dataset.country);
+}
+
+function syncRankedInput() {
+  const countries = getSelectedCountries();
+  rankedInput.value = JSON.stringify(countries);
+  emptyMsg.style.display = countries.length ? 'none' : '';
+  updateGridForCountries(countries);
+}
+
+function makeDraggable(li) {
+  li.draggable = true;
+  li.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    li.classList.add('dragging');
+  });
+  li.addEventListener('dragend', () => {
+    li.classList.remove('dragging');
+    syncRankedInput();
+  });
+  li.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = rankedList.querySelector('.dragging');
+    if (!dragging || dragging === li) return;
+    const rect = li.getBoundingClientRect();
+    if (e.clientY < rect.top + rect.height / 2) rankedList.insertBefore(dragging, li);
+    else li.after(dragging);
+  });
+}
+
+function addToRanked(country) {
+  const li = document.createElement('li');
+  li.dataset.country = country;
+  li.innerHTML = `
+    <span class="drag-handle" aria-hidden="true">⠿</span>
+    <span class="country-name">${country}</span>
+    <button type="button" class="remove-btn" aria-label="Remove ${country}">×</button>
+  `;
+  li.querySelector('.remove-btn').addEventListener('click', () => removeFromRanked(li, country));
+  makeDraggable(li);
+  rankedList.appendChild(li);
+  syncRankedInput();
+}
+
+function removeFromRanked(li, country) {
+  rankedList.removeChild(li);
+  pool.querySelector(`.chip[data-country="${CSS.escape(country)}"]`).style.display = '';
+  syncRankedInput();
+}
+
+pool.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.style.display = 'none';
+    addToRanked(chip.dataset.country);
+  });
+});
+
+// ── Availability grid (country-filtered toggle) ──────────────
+const grid         = document.getElementById('student-grid');
+const avInput      = document.getElementById('availability-data');
+const countrySlots = JSON.parse('{{ country_slots | safe }}');
+const avData       = {};
+
+function updateGridForCountries(selectedCountries) {
+  if (!grid) return;
+  let union = null;
+  if (selectedCountries.length > 0) {
+    union = new Set();
+    selectedCountries.forEach(c => {
+      if (countrySlots[c]) countrySlots[c].forEach(k => union.add(k));
+    });
+  }
+  grid.querySelectorAll('.slot').forEach(cell => {
+    if (cell.dataset.locked) return;
+    const key = `${cell.dataset.day}|${cell.dataset.time}`;
+    const shouldLock = union !== null && !union.has(key);
+    cell.classList.toggle('slot-locked', shouldLock);
+    if (shouldLock && avData[key]) {
+      delete avData[key];
+      cell.classList.remove('pref-first');
+    }
+  });
+  avInput.value = JSON.stringify(avData);
+}
+
+if (grid) {
+  grid.querySelectorAll('.slot').forEach(cell => {
+    if (cell.dataset.locked) return;
+    cell.addEventListener('click', () => {
+      if (cell.classList.contains('slot-locked')) return;
+      const key = `${cell.dataset.day}|${cell.dataset.time}`;
+      if (avData[key]) {
+        delete avData[key];
+        cell.classList.remove('pref-first');
+      } else {
+        avData[key] = 'pref-first';
+        cell.classList.add('pref-first');
+      }
+      avInput.value = JSON.stringify(avData);
+    });
+  });
+}
 </script>
-{% endif %}
 {% endblock %}
