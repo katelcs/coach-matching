@@ -721,6 +721,18 @@ def admin_match(student_id):
                            days=DAYS)
 
 
+@app.route("/admin/check-submission")
+def check_submission():
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"error": "email parameter required"}), 400
+    db = get_db()
+    row = db.execute(
+        "SELECT id FROM student_submissions WHERE LOWER(email) = ?", (email,)
+    ).fetchone()
+    return jsonify({"submitted": row is not None, "email": email})
+
+
 @app.cli.command("init-db")
 def init_db_command():
     init_db()
