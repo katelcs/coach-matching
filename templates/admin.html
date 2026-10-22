@@ -47,7 +47,7 @@
     {% endfor %}
   </div>
 
-  <table class="data-table">
+  <table class="data-table hide-response-cols" id="students-table">
     <thead>
       <tr>
         <th>Done</th>
@@ -65,8 +65,8 @@
         <th>Timezone</th>
         <th>Notes</th>
         <th>Submitted (ET)</th>
-        <th>Assigned At (ET)</th>
-        <th>Response Hrs</th>
+        <th class="col-assigned-at">Assigned At (ET)</th>
+        <th class="col-response-hrs">Response Hrs</th>
         <th>Assigned Coach</th>
         <th>Session Time</th>
         <th>Matches</th>
@@ -133,8 +133,8 @@
         <td>{{ s.notes or '—' }}</td>
 
         <td class="keep-visible">{{ s.submitted_et }}</td>
-        <td class="keep-visible"><span class="assigned-at-display" data-student-id="{{ s.id }}">{{ s.assigned_at_et }}</span></td>
-        <td class="keep-visible"><span class="response-hours-display" data-student-id="{{ s.id }}">{% if s.response_hours is not none %}{{ s.response_hours }}h{% else %}—{% endif %}</span></td>
+        <td class="keep-visible col-assigned-at"><span class="assigned-at-display" data-student-id="{{ s.id }}">{{ s.assigned_at_et }}</span></td>
+        <td class="keep-visible col-response-hrs"><span class="response-hours-display" data-student-id="{{ s.id }}">{% if s.response_hours is not none %}{{ s.response_hours }}h{% else %}—{% endif %}</span></td>
 
         <td>
           <select class="coach-select assign-select"
@@ -222,6 +222,8 @@ document.querySelectorAll('.coach-row').forEach(row => {
 });
 
 // ── Course tab filtering ──────────────────────────────────────
+const RESPONSE_COL_COURSES = new Set(['private-coaching', 'premier-coaching']);
+
 function switchCourseTab(slug) {
   document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active-tab'));
   document.querySelector(`.course-tab[data-course="${slug}"]`).classList.add('active-tab');
@@ -229,6 +231,8 @@ function switchCourseTab(slug) {
     const rowCourse = row.dataset.course || 'private-coaching';
     row.style.display = (slug === 'all' || rowCourse === slug) ? '' : 'none';
   });
+  const showCols = RESPONSE_COL_COURSES.has(slug);
+  document.getElementById('students-table').classList.toggle('hide-response-cols', !showCols);
 }
 
 // ── Assignment dropdowns ──────────────────────────────────────

@@ -807,6 +807,10 @@ details summary:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 
+/* Course-tab-conditional columns */
+.hide-response-cols .col-assigned-at,
+.hide-response-cols .col-response-hrs { display: none; }
+
 /* Collapsed assigned rows */
 .student-row { cursor: pointer; }
 .row-collapsed { cursor: pointer; }
