@@ -807,6 +807,18 @@ details summary:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 
+/* Collapsed assigned rows */
+.row-collapsed { cursor: pointer; }
+.row-collapsed td:not(.keep-visible) {
+  font-size: 0;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  overflow: hidden;
+}
+.row-collapsed td:not(.keep-visible) > * { display: none !important; }
+.row-collapsed td.keep-visible { vertical-align: middle; padding-top: 3px; padding-bottom: 3px; }
+.row-collapsed:hover td { background: rgba(42,157,106,0.04) !important; }
+
 /* Radio labels in generic student form */
 .radio-label {
   display: flex;

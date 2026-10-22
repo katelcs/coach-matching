@@ -117,6 +117,13 @@ def init_db():
         except psycopg2.errors.DuplicateColumn:
             conn.rollback()
 
+    # Migration for assignment timestamp
+    try:
+        cur.execute("ALTER TABLE student_submissions ADD COLUMN assigned_at TIMESTAMP")
+        conn.commit()
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+
     # Migrations for multi-course fields
     course_fields = [
         ("course",              "TEXT"),

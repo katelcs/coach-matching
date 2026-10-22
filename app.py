@@ -1,5 +1,7 @@
 import os
 import json
+from datetime import timezone as dt_timezone, timedelta
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_dance.contrib.google import make_google_blueprint, google
 from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
@@ -15,6 +17,51 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.jinja_env.filters["from_json"] = json.loads
 app.teardown_appcontext(close_db)
 
+EASTERN = ZoneInfo('America/New_York')
+
+
+def _to_eastern(dt):
+    if not dt:
+        return '—'
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=dt_timezone.utc)
+    return dt.astimezone(EASTERN).strftime('%Y-%m-%d %H:%M ET')
+
+
+def _business_hours_elapsed(start_dt, end_dt):
+    """Hours between two timestamps counting only 9am–5pm ET each day."""
+    if not start_dt or not end_dt:
+        return None
+    if start_dt.tzinfo is None:
+        start_dt = start_dt.replace(tzinfo=dt_timezone.utc)
+    if end_dt.tzinfo is None:
+        end_dt = end_dt.replace(tzinfo=dt_timezone.utc)
+    start_et = start_dt.astimezone(EASTERN)
+    end_et   = end_dt.astimezone(EASTERN)
+    if end_et <= start_et:
+        return 0.0
+    total_secs = 0.0
+    current = start_et
+    while current.date() <= end_et.date():
+        w_start = current.replace(hour=9,  minute=0, second=0, microsecond=0)
+        w_end   = current.replace(hour=17, minute=0, second=0, microsecond=0)
+        seg_start = max(current if current.date() == start_et.date() else w_start, w_start)
+        seg_end   = min(end_et  if current.date() == end_et.date()   else w_end,   w_end)
+        if seg_end > seg_start:
+            total_secs += (seg_end - seg_start).total_seconds()
+        current = (current + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return round(total_secs / 3600, 1)
+
+
+STAFF_COACHES = [
+    {"name": "Gaby",    "email": "gaby@lcs.internal",    "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Diana",   "email": "diana@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Carla",   "email": "carla@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Michael", "email": "michael@lcs.internal", "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Caro",    "email": "caro@lcs.internal",    "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Ailen",   "email": "ailen@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
+    {"name": "Tamara",  "email": "tamara@lcs.internal",  "country": "", "timezone": "", "availability": "{}"},
+]
 
 APPROVED_COACH_EMAILS = [e.strip() for e in os.environ.get("APPROVED_COACH_EMAILS", "").split(",") if e.strip()]
 APPROVED_ADMIN_EMAILS = [e.strip() for e in os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",") if e.strip()]
@@ -517,16 +564,30 @@ def admin():
     if err:
         return err
     db = get_db()
-    students = db.execute("SELECT * FROM student_submissions ORDER BY created_at DESC").fetchall()
+
+    students_raw = db.execute("SELECT * FROM student_submissions ORDER BY created_at DESC").fetchall()
+    students = []
+    for s in students_raw:
+        d = dict(s)
+        d['submitted_et']    = _to_eastern(s['created_at'])
+        d['assigned_at_et']  = _to_eastern(s.get('assigned_at'))
+        d['response_hours']  = _business_hours_elapsed(s['created_at'], s.get('assigned_at'))
+        students.append(d)
+
     coaches = db.execute("SELECT * FROM coach_submissions ORDER BY updated_at DESC").fetchall()
     coaches_json = json.dumps([{
         "name": c["name"], "email": c["email"],
         "country": c["country"] or "", "timezone": c["timezone"] or "",
         "availability": c["availability"] or "{}",
     } for c in coaches])
+
+    db_emails = {c["email"] for c in coaches}
+    staff_only = [s for s in STAFF_COACHES if s["email"] not in db_emails]
+    all_coaches = staff_only + [dict(c) for c in coaches]
+
     return render_template("admin.html", students=students, coaches=coaches,
-                           coaches_json=coaches_json, days=DAYS, time_slots=TIME_SLOTS,
-                           courses=COURSES)
+                           all_coaches=all_coaches, coaches_json=coaches_json,
+                           days=DAYS, time_slots=TIME_SLOTS, courses=COURSES)
 
 
 @app.route("/admin/coach-slots/<coach_email>")
@@ -603,13 +664,25 @@ def admin_toggle_assigned(student_id):
     if err:
         return jsonify({"error": "unauthorized"}), 403
     data = request.json
+    is_assigned = bool(data.get("is_assigned"))
     db = get_db()
-    db.execute(
-        "UPDATE student_submissions SET is_assigned = ? WHERE id = ?",
-        (bool(data.get("is_assigned")), student_id)
-    )
+    if is_assigned:
+        db.execute(
+            "UPDATE student_submissions SET is_assigned = ?, assigned_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (True, student_id)
+        )
+    else:
+        db.execute(
+            "UPDATE student_submissions SET is_assigned = ?, assigned_at = NULL WHERE id = ?",
+            (False, student_id)
+        )
     db.commit()
-    return jsonify({"ok": True})
+    row = db.execute(
+        "SELECT created_at, assigned_at FROM student_submissions WHERE id = ?", (student_id,)
+    ).fetchone()
+    assigned_at_et = _to_eastern(row['assigned_at']) if row else '—'
+    response_hours = _business_hours_elapsed(row['created_at'], row['assigned_at']) if row else None
+    return jsonify({"ok": True, "assigned_at_et": assigned_at_et, "response_hours": response_hours})
 
 
 @app.route("/admin/import-student", methods=["POST"])

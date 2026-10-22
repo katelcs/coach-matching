@@ -6,13 +6,11 @@
 
   <h2>Coaches ({{ coaches | length }})</h2>
 
-  <!-- Combined coverage grid -->
   <p class="hint" style="margin-bottom:var(--space-2)">All coaches combined — number = coaches covering that slot. Click a coach row to see their individual grid.</p>
   <div class="grid-wrapper" style="margin-bottom:var(--space-4)">
     <table class="availability-grid admin-av-grid" id="combined-grid"></table>
   </div>
 
-  <!-- Coaches table -->
   <table class="data-table" id="coaches-table">
     <thead>
       <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th></tr>
@@ -32,7 +30,6 @@
     </tbody>
   </table>
 
-  <!-- Selected coach detail grid -->
   <div id="coach-detail" hidden>
     <h3 id="coach-detail-title" style="margin-top:var(--space-4);margin-bottom:var(--space-2);font-family:var(--font-sans);font-size:0.95rem;font-weight:600"></h3>
     <div class="grid-wrapper">
@@ -43,7 +40,6 @@
   <!-- ── Students ───────────────────────────────────────────── -->
   <h2 style="margin-top:var(--space-6)">Students ({{ students | length }})</h2>
 
-  <!-- Course tabs -->
   <div class="course-tabs" style="margin-bottom:var(--space-3)">
     <button class="course-tab active-tab" data-course="all" onclick="switchCourseTab('all')">All</button>
     {% for slug, cfg in courses.items() %}
@@ -59,8 +55,8 @@
         <th>Name</th>
         <th>Email</th>
         <th>Location</th>
-        <th>Accent Preferences</th>
-        <th>Motivation / Goal</th>
+        <th>Accent Prefs</th>
+        <th>Motivation</th>
         <th>Background / Study</th>
         <th>Availability</th>
         <th>Continue?</th>
@@ -68,7 +64,9 @@
         <th>Agreements</th>
         <th>Timezone</th>
         <th>Notes</th>
-        <th>Submitted</th>
+        <th>Submitted (ET)</th>
+        <th>Assigned At (ET)</th>
+        <th>Response Hrs</th>
         <th>Assigned Coach</th>
         <th>Session Time</th>
         <th>Matches</th>
@@ -78,63 +76,52 @@
       {% for s in students %}
       {% set ranked = (s.countries | from_json) if s.countries else [] %}
       {% set course_name = courses[s.course].name if s.course and s.course in courses else (s.course or 'Private Coaching') %}
-      <tr class="student-row {% if s.is_assigned %}row-assigned{% endif %}"
+      <tr class="student-row {% if s.is_assigned %}row-assigned row-collapsed{% endif %}"
           data-student-id="{{ s.id }}"
           data-course="{{ s.course or 'private-coaching' }}">
-        <td class="assigned-cell">
+
+        <td class="assigned-cell keep-visible">
           <input type="checkbox" class="assigned-check" data-student-id="{{ s.id }}"
                  {% if s.is_assigned %}checked{% endif %}
                  aria-label="Mark assigned" />
         </td>
-        <td><span class="course-badge">{{ course_name }}</span></td>
-        <td>{{ s.name }}</td>
-        <td>{{ s.email }}</td>
+
+        <td class="keep-visible"><span class="course-badge">{{ course_name }}</span></td>
+        <td class="keep-visible">{{ s.name }}</td>
+        <td class="keep-visible">{{ s.email }}</td>
+
         <td>{{ s.location or '—' }}</td>
         <td>
           {% if ranked %}
-          <ol class="ranked-display">
-            {% for c in ranked %}<li>{{ c }}</li>{% endfor %}
-          </ol>
+          <ol class="ranked-display">{% for c in ranked %}<li>{{ c }}</li>{% endfor %}</ol>
           {% else %}—{% endif %}
         </td>
         <td>
-          {% if s.motivation %}
-          <details><summary>View</summary>{{ s.motivation }}</details>
+          {% if s.motivation %}<details><summary>View</summary>{{ s.motivation }}</details>
           {% else %}—{% endif %}
         </td>
         <td>
-          {% if s.study_background %}
-          <details><summary>View</summary>{{ s.study_background }}</details>
-          {% elif s.previous_study %}
-          <details><summary>View</summary>{{ s.previous_study }}</details>
+          {% if s.study_background %}<details><summary>View</summary>{{ s.study_background }}</details>
+          {% elif s.previous_study %}<details><summary>View</summary>{{ s.previous_study }}</details>
           {% else %}—{% endif %}
         </td>
         <td>
-          {% if s.availability_text %}
-          <details><summary>View</summary>{{ s.availability_text }}</details>
+          {% if s.availability_text %}<details><summary>View</summary>{{ s.availability_text }}</details>
           {% elif s.availability and s.availability != '{}' %}
           <details>
             <summary>View grid</summary>
             {% set av = s.availability | from_json %}
             <div class="mini-grid">
-              {% for day in days %}
-              <div class="mini-day">
-                <strong>{{ day[:3] }}</strong>
-                {% for slot in time_slots %}
-                {% set key = day ~ "|" ~ slot %}
-                {% if av.get(key) %}
-                <span class="mini-slot {{ av[key] }}">{{ slot }}</span>
-                {% endif %}
-                {% endfor %}
-              </div>
-              {% endfor %}
+              {% for day in days %}<div class="mini-day"><strong>{{ day[:3] }}</strong>
+                {% for slot in time_slots %}{% set key = day ~ "|" ~ slot %}
+                {% if av.get(key) %}<span class="mini-slot {{ av[key] }}">{{ slot }}</span>{% endif %}
+                {% endfor %}</div>{% endfor %}
             </div>
           </details>
           {% else %}—{% endif %}
         </td>
         <td>
-          {% if s.continue_same_coach %}
-          Coach: {{ s.continue_same_coach }}<br>Time: {{ s.continue_same_time or '?' }}
+          {% if s.continue_same_coach %}Coach: {{ s.continue_same_coach }}<br>Time: {{ s.continue_same_time or '?' }}
           {% else %}—{% endif %}
         </td>
         <td>{{ s.accommodations or '—' }}</td>
@@ -144,13 +131,17 @@
         </td>
         <td>{{ s.timezone or '—' }}</td>
         <td>{{ s.notes or '—' }}</td>
-        <td>{{ s.created_at }}</td>
+
+        <td class="keep-visible">{{ s.submitted_et }}</td>
+        <td class="keep-visible"><span class="assigned-at-display" data-student-id="{{ s.id }}">{{ s.assigned_at_et }}</span></td>
+        <td class="keep-visible"><span class="response-hours-display" data-student-id="{{ s.id }}">{% if s.response_hours is not none %}{{ s.response_hours }}h{% else %}—{% endif %}</span></td>
+
         <td>
           <select class="coach-select assign-select"
                   data-student-id="{{ s.id }}"
                   data-assigned-time="{{ s.assigned_time or '' }}">
             <option value="">— Select coach —</option>
-            {% for c in coaches %}
+            {% for c in all_coaches %}
             <option value="{{ c.email }}" {% if c.email == s.assigned_coach %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
           </select>
@@ -164,7 +155,7 @@
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="18">No student submissions yet.</td></tr>
+      <tr><td colspan="20">No student submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -193,7 +184,6 @@ function renderAvGrid(tableEl, getCellFn) {
   tableEl.innerHTML = html;
 }
 
-// Combined grid
 const combined = {};
 COACHES.forEach(coach => {
   const av = JSON.parse(coach.availability || '{}');
@@ -213,7 +203,6 @@ renderAvGrid(document.getElementById('combined-grid'), key => {
   return {td: `<td class="slot admin-slot ${cls}" title="${n} coach(es)">${n > 1 ? `<span class="slot-count">${n}</span>` : ''}</td>`, data: true};
 });
 
-// Coach row → individual grid
 document.querySelectorAll('.coach-row').forEach(row => {
   row.addEventListener('click', () => {
     document.querySelectorAll('.coach-row').forEach(r => r.classList.remove('selected-coach'));
@@ -282,21 +271,47 @@ async function saveAssignment(studentId, coachEmail, assignedTime, statusEl) {
   }
 }
 
-// ── Assigned checkbox ─────────────────────────────────────────
+// ── Assigned checkbox + collapse ──────────────────────────────
 document.querySelectorAll('.assigned-check').forEach(cb => {
   cb.addEventListener('change', async function () {
     const studentId = this.dataset.studentId;
     const checked   = this.checked;
     const row       = this.closest('.student-row');
     row.classList.toggle('row-assigned', checked);
-    await fetch(`/admin/student/${studentId}/toggle-assigned`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({is_assigned: checked})
-    });
+    row.classList.toggle('row-collapsed', checked);
+    try {
+      const resp = await fetch(`/admin/student/${studentId}/toggle-assigned`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({is_assigned: checked})
+      });
+      const data = await resp.json();
+      if (data.ok && checked) {
+        const atEl = row.querySelector(`.assigned-at-display[data-student-id="${studentId}"]`);
+        if (atEl) atEl.textContent = data.assigned_at_et;
+        const rhEl = row.querySelector(`.response-hours-display[data-student-id="${studentId}"]`);
+        if (rhEl) rhEl.textContent = data.response_hours !== null && data.response_hours !== undefined
+          ? data.response_hours + 'h' : '—';
+      } else if (data.ok && !checked) {
+        const atEl = row.querySelector(`.assigned-at-display[data-student-id="${studentId}"]`);
+        if (atEl) atEl.textContent = '—';
+        const rhEl = row.querySelector(`.response-hours-display[data-student-id="${studentId}"]`);
+        if (rhEl) rhEl.textContent = '—';
+      }
+    } catch { /* silent */ }
   });
 });
 
+// Click collapsed row to expand
+document.querySelectorAll('.student-row').forEach(row => {
+  row.addEventListener('click', function (e) {
+    if (!this.classList.contains('row-collapsed')) return;
+    if (e.target.closest('.assigned-cell')) return;
+    this.classList.remove('row-collapsed');
+  });
+});
+
+// ── Coach/time selects ────────────────────────────────────────
 document.querySelectorAll('.coach-select').forEach(coachSelect => {
   const studentId  = coachSelect.dataset.studentId;
   const savedTime  = coachSelect.dataset.assignedTime;
