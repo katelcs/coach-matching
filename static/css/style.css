@@ -808,6 +808,7 @@ details summary:hover { text-decoration: underline; }
 }
 
 /* Collapsed assigned rows */
+.student-row { cursor: pointer; }
 .row-collapsed { cursor: pointer; }
 .row-collapsed td:not(.keep-visible) {
   font-size: 0;

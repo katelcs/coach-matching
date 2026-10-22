@@ -302,12 +302,11 @@ document.querySelectorAll('.assigned-check').forEach(cb => {
   });
 });
 
-// Click collapsed row to expand
+// Click any student row to toggle collapse
 document.querySelectorAll('.student-row').forEach(row => {
   row.addEventListener('click', function (e) {
-    if (!this.classList.contains('row-collapsed')) return;
-    if (e.target.closest('.assigned-cell')) return;
-    this.classList.remove('row-collapsed');
+    if (e.target.closest('.assigned-cell, select, a, button, details, input')) return;
+    this.classList.toggle('row-collapsed');
   });
 });
 
