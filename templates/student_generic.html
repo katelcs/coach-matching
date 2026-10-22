@@ -44,7 +44,7 @@
     {% endif %}
 
     <!-- ── Accent Preference ──────────────────────────────────── -->
-    <section>
+    <section id="section-accent" {% if course_config.has_continue %}style="display:none"{% endif %}>
       <h2>Accent Preference</h2>
       <p class="hint">Click countries to rank them by preference. Drag to reorder. Your top choice is #1.</p>
       <div class="ranker">
@@ -66,7 +66,7 @@
     </section>
 
     <!-- ── Weekly Availability ────────────────────────────────── -->
-    <section>
+    <section id="section-availability" {% if course_config.has_continue %}style="display:none"{% endif %}>
       <h2>Weekly Availability</h2>
       <p class="hint">
         Please click ALL times that you're available for coaching sessions.
@@ -147,6 +147,24 @@
 </div>
 
 <script>
+// ── Post-Cohort conditional sections ─────────────────────────
+{% if course_config.has_continue %}
+(function () {
+  const accentSection = document.getElementById('section-accent');
+  const avSection     = document.getElementById('section-availability');
+
+  function updateSections() {
+    const sameCoach = document.querySelector('input[name="continue_same_coach"]:checked');
+    const sameTime  = document.querySelector('input[name="continue_same_time"]:checked');
+    accentSection.style.display = (sameCoach && sameCoach.value === 'no') ? '' : 'none';
+    avSection.style.display     = (sameTime  && sameTime.value  === 'no') ? '' : 'none';
+  }
+
+  document.querySelectorAll('input[name="continue_same_coach"], input[name="continue_same_time"]')
+    .forEach(r => r.addEventListener('change', updateSections));
+})();
+{% endif %}
+
 // ── Timezone conversion ───────────────────────────────────────
 const tzSelect = document.getElementById('timezone-select');
 const tzLabel  = document.getElementById('tz-label');
