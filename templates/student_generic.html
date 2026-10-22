@@ -118,12 +118,12 @@
       {% endif %}
       {% if course_config.has_previous_study %}
       <label style="margin-top:var(--space-3)">{{ course_config.previous_study_label }}
-        <textarea name="previous_study" rows="3" placeholder="e.g. Completed lessons 1–40, or 'This is my first LCS program'…"></textarea>
+        <textarea name="previous_study" rows="3" required placeholder="e.g. Completed lessons 1–40. If none, write 'None'."></textarea>
       </label>
       {% endif %}
       <label style="margin-top:var(--space-3)">Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
         <p class="hint" style="margin-top:0.2rem">Note: We are NOT experts in learning differences or disability accommodation, but we will try our best to serve your needs within our capabilities.</p>
-        <textarea name="accommodations" rows="3" placeholder="Optional — describe any accommodations that would help you…"></textarea>
+        <textarea name="accommodations" rows="3" required placeholder="Describe any accommodations that would help you. If none, write 'None'."></textarea>
       </label>
     </section>
 
