@@ -327,31 +327,32 @@ textarea {
 }
 
 .time-label {
-  padding: 4px 10px;
+  width: 1%;           /* shrink to content — day columns share the rest */
+  padding: 4px 6px;
   white-space: nowrap;
   color: var(--slate);
   background: var(--paper);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   text-align: right;
 }
 
 .slot {
-  width: 60px;
-  min-height: 36px;
+  min-width: 80px;     /* day columns are wider now that time label is compact */
+  min-height: 48px;
   cursor: pointer;
   transition: background var(--motion-micro) var(--ease);
   vertical-align: top;
-  padding: 3px 4px;
+  padding: 4px 6px;
 }
 .slot:hover { background: rgba(68,154,194,0.12); }
 
 .slot-countries {
   display: block;
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  line-height: 1.35;
-  color: rgba(31,27,22,0.55);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(31,27,22,0.6);
   pointer-events: none;
 }
 .slot.pref-first .slot-countries { color: rgba(255,255,255,0.85); }
