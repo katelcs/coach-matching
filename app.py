@@ -723,14 +723,21 @@ def admin_match(student_id):
 
 @app.route("/admin/check-submission")
 def check_submission():
-    email = request.args.get("email", "").strip().lower()
+    email  = request.args.get("email", "").strip().lower()
+    course = request.args.get("course", "").strip()
     if not email:
         return jsonify({"error": "email parameter required"}), 400
     db = get_db()
-    row = db.execute(
-        "SELECT id FROM student_submissions WHERE LOWER(email) = ?", (email,)
-    ).fetchone()
-    return jsonify({"submitted": row is not None, "email": email})
+    if course:
+        row = db.execute(
+            "SELECT id FROM student_submissions WHERE LOWER(email) = ? AND course = ?",
+            (email, course)
+        ).fetchone()
+    else:
+        row = db.execute(
+            "SELECT id FROM student_submissions WHERE LOWER(email) = ?", (email,)
+        ).fetchone()
+    return jsonify({"submitted": row is not None, "email": email, "course": course or "all"})
 
 
 @app.cli.command("init-db")
