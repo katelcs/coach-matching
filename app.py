@@ -183,6 +183,7 @@ COURSES = {
         "has_notes": False,
         "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this challenge?",
         "previous_study_label": "If you've taken any LCS lessons, which ones have you completed?",
+        "days": ["Monday", "Friday"],
     },
     "subjunctive-challenge": {
         "name": "Subjunctive Challenge",
@@ -380,12 +381,13 @@ def _student_generic(course_config, course_slug):
             db.commit()
             return render_template("thank_you.html", role="student")
 
+    course_days = course_config.get("days", DAYS)
     return render_template("student_generic.html",
                            course_config=course_config,
                            course_slug=course_slug,
                            countries=available_countries,
                            available_slots=available_slots,
-                           days=DAYS,
+                           days=course_days,
                            timezones=TIMEZONES,
                            covered_keys=covered,
                            country_slots=json.dumps(country_slots),
