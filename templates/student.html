@@ -263,7 +263,7 @@ if (grid) {
         delete avData[key];
         cell.classList.remove('pref-first');
       } else {
-        avData[key] = 'pref-first';
+        avData[key] = 'available';
         cell.classList.add('pref-first');
       }
       avInput.value = JSON.stringify(avData);

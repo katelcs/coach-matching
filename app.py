@@ -478,7 +478,7 @@ def coach_submit():
     return render_template("thank_you.html", role="coach")
 
 
-_STUDENT_PREF_WEIGHT = {"pref-first": 3, "pref-second": 2, "pref-third": 1}
+_STUDENT_PREF_WEIGHT = {"pref-first": 1, "pref-second": 1, "pref-third": 1, "available": 1}
 _COACH_STATUS_WEIGHT = {"definite": 2, "maybe": 1}
 
 
