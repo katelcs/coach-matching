@@ -665,18 +665,21 @@ def admin_toggle_assigned(student_id):
     _, err = _require_admin()
     if err:
         return jsonify({"error": "unauthorized"}), 403
-    data = request.json
-    is_assigned = bool(data.get("is_assigned"))
+    data    = request.json
+    status  = data.get("status", "unassigned")
+    if status not in ("unassigned", "offered", "assigned"):
+        status = "unassigned"
+    is_assigned = status == "assigned"
     db = get_db()
     if is_assigned:
         db.execute(
-            "UPDATE student_submissions SET is_assigned = ?, assigned_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (True, student_id)
+            "UPDATE student_submissions SET status = ?, is_assigned = ?, assigned_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (status, True, student_id)
         )
     else:
         db.execute(
-            "UPDATE student_submissions SET is_assigned = ?, assigned_at = NULL WHERE id = ?",
-            (False, student_id)
+            "UPDATE student_submissions SET status = ?, is_assigned = ?, assigned_at = NULL WHERE id = ?",
+            (status, False, student_id)
         )
     db.commit()
     row = db.execute(

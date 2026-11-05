@@ -84,12 +84,15 @@
       {% set course_name = courses[s.course].name if s.course and s.course in courses else (s.course or 'Private Coaching') %}
       <tr class="student-row {% if s.is_assigned %}row-assigned row-collapsed{% endif %}"
           data-student-id="{{ s.id }}"
-          data-course="{{ s.course or 'private-coaching' }}">
+          data-course="{{ s.course or 'private-coaching' }}"
+          data-status="{{ s.status or ('assigned' if s.is_assigned else 'unassigned') }}">
 
         <td class="assigned-cell keep-visible">
-          <input type="checkbox" class="assigned-check" data-student-id="{{ s.id }}"
-                 {% if s.is_assigned %}checked{% endif %}
-                 aria-label="Mark assigned" />
+          <select class="status-select" data-student-id="{{ s.id }}">
+            <option value="unassigned" {% if (s.status or 'unassigned') == 'unassigned' %}selected{% endif %}>Unassigned</option>
+            <option value="offered"    {% if (s.status or '') == 'offered' %}selected{% endif %}>Offered to coach</option>
+            <option value="assigned"   {% if (s.status or '') == 'assigned' %}selected{% endif %}>Assigned</option>
+          </select>
         </td>
 
         <td class="keep-visible"><span class="course-badge">{{ course_name }}</span></td>
@@ -238,11 +241,11 @@ let activeAssignedMode = 'all';
 
 function applyFilters() {
   document.querySelectorAll('.student-row').forEach(row => {
-    const rowCourse    = row.dataset.course || 'private-coaching';
-    const isAssigned   = row.classList.contains('row-assigned');
-    const courseMatch  = activeCourseSlug === 'all' || rowCourse === activeCourseSlug;
-    const assignMatch  = activeAssignedMode === 'all' || !isAssigned;
-    row.style.display  = (courseMatch && assignMatch) ? '' : 'none';
+    const rowCourse   = row.dataset.course || 'private-coaching';
+    const rowStatus   = row.dataset.status || 'unassigned';
+    const courseMatch = activeCourseSlug === 'all' || rowCourse === activeCourseSlug;
+    const assignMatch = activeAssignedMode === 'all' || rowStatus !== 'assigned';
+    row.style.display = (courseMatch && assignMatch) ? '' : 'none';
   });
   const showCols = RESPONSE_COL_COURSES.has(activeCourseSlug);
   document.getElementById('students-table').classList.toggle('hide-response-cols', !showCols);
@@ -302,33 +305,27 @@ async function saveAssignment(studentId, coachEmail, assignedTime, statusEl) {
   }
 }
 
-// ── Assigned checkbox + collapse ──────────────────────────────
-document.querySelectorAll('.assigned-check').forEach(cb => {
-  cb.addEventListener('change', async function () {
+// ── Status dropdown + collapse ────────────────────────────────
+document.querySelectorAll('.status-select').forEach(sel => {
+  sel.addEventListener('change', async function () {
     const studentId = this.dataset.studentId;
-    const checked   = this.checked;
+    const status    = this.value;
     const row       = this.closest('.student-row');
-    row.classList.toggle('row-assigned', checked);
-    row.classList.toggle('row-collapsed', checked);
+    const isAssigned = status === 'assigned';
+    row.dataset.status = status;
+    row.classList.toggle('row-assigned', isAssigned);
+    row.classList.toggle('row-collapsed', isAssigned);
     try {
       const resp = await fetch(`/admin/student/${studentId}/toggle-assigned`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({is_assigned: checked})
+        body: JSON.stringify({status})
       });
       const data = await resp.json();
-      if (data.ok && checked) {
-        const atEl = row.querySelector(`.assigned-at-display[data-student-id="${studentId}"]`);
-        if (atEl) atEl.textContent = data.assigned_at_et;
-        const rhEl = row.querySelector(`.response-hours-display[data-student-id="${studentId}"]`);
-        if (rhEl) rhEl.textContent = data.response_hours !== null && data.response_hours !== undefined
-          ? data.response_hours + 'h' : '—';
-      } else if (data.ok && !checked) {
-        const atEl = row.querySelector(`.assigned-at-display[data-student-id="${studentId}"]`);
-        if (atEl) atEl.textContent = '—';
-        const rhEl = row.querySelector(`.response-hours-display[data-student-id="${studentId}"]`);
-        if (rhEl) rhEl.textContent = '—';
-      }
+      const atEl = row.querySelector(`.assigned-at-display[data-student-id="${studentId}"]`);
+      const rhEl = row.querySelector(`.response-hours-display[data-student-id="${studentId}"]`);
+      if (atEl) atEl.textContent = isAssigned ? (data.assigned_at_et || '—') : '—';
+      if (rhEl) rhEl.textContent = isAssigned && data.response_hours != null ? data.response_hours + 'h' : '—';
     } catch { /* silent */ }
   });
 });

@@ -124,6 +124,16 @@ def init_db():
     except psycopg2.errors.DuplicateColumn:
         conn.rollback()
 
+    # Migration for student status
+    try:
+        cur.execute("ALTER TABLE student_submissions ADD COLUMN status TEXT DEFAULT 'unassigned'")
+        conn.commit()
+        # Back-fill existing is_assigned rows
+        cur.execute("UPDATE student_submissions SET status = 'assigned' WHERE is_assigned = TRUE")
+        conn.commit()
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+
     # Migrations for multi-course fields
     course_fields = [
         ("course",              "TEXT"),
