@@ -135,7 +135,7 @@ def index():
 def _coach_covered_slots():
     """Return ({day|slot covered}, {day|slot: [country, ...]})."""
     db = get_db()
-    coaches = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
+    coaches = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     covered = set()
     slot_countries = {}
     for coach in coaches:
@@ -263,12 +263,12 @@ def _student_private(course_config):
 
     db = get_db()
     coach_countries_rows = db.execute(
-        "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != ''"
+        "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != '' AND is_active IS NOT FALSE"
     ).fetchall()
     coach_countries = [r["country"] for r in coach_countries_rows]
     available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
 
-    coaches_all = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
+    coaches_all = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     country_slots = {}
     for coach in coaches_all:
         country = coach["country"]
@@ -329,12 +329,12 @@ def _student_generic(course_config, course_slug):
 
     db = get_db()
     coach_countries_rows = db.execute(
-        "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != ''"
+        "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != '' AND is_active IS NOT FALSE"
     ).fetchall()
     coach_countries = [r["country"] for r in coach_countries_rows]
     available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
 
-    coaches_all = db.execute("SELECT country, availability FROM coach_submissions").fetchall()
+    coaches_all = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     country_slots = {}
     for coach in coaches_all:
         country = coach["country"]
@@ -592,6 +592,21 @@ def admin():
                            days=DAYS, time_slots=TIME_SLOTS, courses=COURSES)
 
 
+@app.route("/admin/coach/<coach_email>/toggle-active", methods=["POST"])
+def admin_toggle_coach_active(coach_email):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    db = get_db()
+    coach = db.execute("SELECT is_active FROM coach_submissions WHERE email = ?", (coach_email,)).fetchone()
+    if not coach:
+        return jsonify({"error": "not found"}), 404
+    new_state = not coach["is_active"]
+    db.execute("UPDATE coach_submissions SET is_active = ? WHERE email = ?", (new_state, coach_email))
+    db.commit()
+    return jsonify({"ok": True, "is_active": new_state})
+
+
 @app.route("/admin/coach-slots/<coach_email>")
 def admin_coach_slots(coach_email):
     _, err = _require_admin()
@@ -720,7 +735,7 @@ def admin_match(student_id):
     student = db.execute("SELECT * FROM student_submissions WHERE id = ?", (student_id,)).fetchone()
     if not student:
         return "Student not found", 404
-    coaches = db.execute("SELECT * FROM coach_submissions").fetchall()
+    coaches = db.execute("SELECT * FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     matches = compute_matches(student, coaches)
     return render_template("match.html", student=student, matches=matches,
                            days=DAYS)

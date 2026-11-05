@@ -773,6 +773,7 @@ details summary:hover { text-decoration: underline; }
 
 .coach-row:hover td { background: rgba(68,154,194,0.08) !important; }
 .coach-row.selected-coach td { background: rgba(68,154,194,0.14) !important; border-bottom-color: var(--cobalt); }
+.coach-row.coach-inactive td { opacity: 0.45; }
 
 .assigned-cell { text-align: center; vertical-align: middle; }
 .assigned-check { width: auto; cursor: pointer; accent-color: var(--cobalt); transform: scale(1.2); }

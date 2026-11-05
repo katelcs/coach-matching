@@ -108,7 +108,8 @@ def init_db():
 
     # Migrations for coach_submissions columns added after initial deploy
     coach_columns = [
-        ("timezone", "TEXT"),
+        ("timezone",   "TEXT"),
+        ("is_active",  "BOOLEAN DEFAULT TRUE"),
     ]
     for col, col_type in coach_columns:
         try:

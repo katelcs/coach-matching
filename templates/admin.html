@@ -13,19 +13,26 @@
 
   <table class="data-table" id="coaches-table">
     <thead>
-      <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th></tr>
+      <tr><th>Name</th><th>Email</th><th>Country</th><th>Timezone</th><th>Updated</th><th>Active</th></tr>
     </thead>
     <tbody>
       {% for c in coaches %}
-      <tr class="coach-row" data-email="{{ c.email }}" style="cursor:pointer">
+      <tr class="coach-row {% if c.is_active == False %}coach-inactive{% endif %}" data-email="{{ c.email }}" style="cursor:pointer">
         <td>{{ c.name }}</td>
         <td>{{ c.email }}</td>
         <td>{{ c.country }}</td>
         <td>{{ c.timezone }}</td>
         <td>{{ c.updated_at }}</td>
+        <td>
+          <button class="coach-active-toggle btn btn-sm {% if c.is_active == False %}btn-secondary{% else %}btn-primary{% endif %}"
+                  data-email="{{ c.email }}"
+                  data-active="{{ 'true' if c.is_active != False else 'false' }}">
+            {{ 'Active' if c.is_active != False else 'Inactive' }}
+          </button>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="5">No coach submissions yet.</td></tr>
+      <tr><td colspan="6">No coach submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -214,6 +221,22 @@ renderAvGrid(document.getElementById('combined-grid'), key => {
   const cls = c.definite > 0 ? 'definite' : 'maybe';
   const n   = c.definite + c.maybe;
   return {td: `<td class="slot admin-slot ${cls}" title="${n} coach(es)">${n > 1 ? `<span class="slot-count">${n}</span>` : ''}</td>`, data: true};
+});
+
+// ── Coach active toggle ───────────────────────────────────────
+document.querySelectorAll('.coach-active-toggle').forEach(btn => {
+  btn.addEventListener('click', async function (e) {
+    e.stopPropagation();
+    const email = this.dataset.email;
+    const resp  = await fetch(`/admin/coach/${encodeURIComponent(email)}/toggle-active`, {method: 'POST'});
+    const data  = await resp.json();
+    if (!data.ok) return;
+    this.dataset.active   = data.is_active ? 'true' : 'false';
+    this.textContent      = data.is_active ? 'Active' : 'Inactive';
+    this.classList.toggle('btn-primary',   data.is_active);
+    this.classList.toggle('btn-secondary', !data.is_active);
+    this.closest('.coach-row').classList.toggle('coach-inactive', !data.is_active);
+  });
 });
 
 document.querySelectorAll('.coach-row').forEach(row => {
