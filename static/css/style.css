@@ -349,13 +349,21 @@ textarea {
 
 .slot-countries {
   display: block;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   line-height: 1.4;
   color: rgba(31,27,22,0.6);
   pointer-events: none;
 }
-.slot.pref-first .slot-countries { color: rgba(255,255,255,0.85); }
+.slot-available-label {
+  display: none;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.95);
+  pointer-events: none;
+}
+.slot.pref-first .slot-available-label { display: block; }
+.slot.pref-first .slot-countries        { display: none; }
 
 .slot-locked {
   background: rgba(31,27,22,0.12);
@@ -410,7 +418,7 @@ textarea {
   color: var(--slate);
   margin-bottom: var(--space-3);
 }
-.ranker-sub { font-weight: 400; color: var(--steel); text-transform: none; letter-spacing: 0; }
+.ranker-sub { font-weight: 400; color: var(--slate); text-transform: none; letter-spacing: 0; }
 
 #country-pool { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 

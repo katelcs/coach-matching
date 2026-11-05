@@ -28,10 +28,9 @@
     <!-- ── Accent Preference ──────────────────────────────────── -->
     <section>
       <h2>Accent Preference</h2>
-      <p class="hint">Click countries to rank them by preference. Drag to reorder. Your top choice is #1.</p>
+      <p class="hint">If you have an accent preference, click the countries below that you would prefer to work with. We will do our best to match you with your preferred accent, based on coaching availability.</p>
       <div class="ranker">
         <div class="ranker-pool">
-          <p class="ranker-label">All countries</p>
           <div id="country-pool">
             {% for country in countries %}
             <button type="button" class="chip" data-country="{{ country }}">{{ country }}</button>
@@ -50,11 +49,7 @@
     <!-- ── Weekly Availability ────────────────────────────────── -->
     <section>
       <h2>Weekly Availability</h2>
-      <p class="hint">
-        Please click ALL times that you're available for coaching sessions.
-        <span class="legend pref-first">Available</span>
-        &nbsp; Times shown in <span id="tz-label">Eastern Time (ET)</span>.
-      </p>
+      <p class="hint">Click all the times you're available. Times shown in <span id="tz-label">Eastern Time (ET)</span>.</p>
       {% if available_slots %}
       <div class="grid-wrapper">
         <table class="availability-grid" id="student-grid">
@@ -65,9 +60,9 @@
             </tr>
           </thead>
           <tbody>
-            {% for et_hour, slot_label in available_slots %}
+            {% for et_hour, slot_label, slot_display in available_slots %}
             <tr>
-              <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_label }}</td>
+              <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_display }}</td>
               {% for day in days %}
               {% set key = day ~ "|" ~ slot_label %}
               {% set countries_here = slot_countries.get(key, []) %}
@@ -75,8 +70,9 @@
                   data-day="{{ day }}" data-time="{{ slot_label }}"
                   {% if key not in covered_keys %}data-locked="true"{% endif %}>
                 {% if countries_here %}
-                <span class="slot-countries">{% for c in countries_here %}{{ c }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span>
+                <span class="slot-countries">{% for c in countries_here %}{{ country_codes.get(c, c[:2]) }}{% if not loop.last %} {% endif %}{% endfor %}</span>
                 {% endif %}
+                <span class="slot-available-label">Available</span>
               </td>
               {% endfor %}
             </tr>
@@ -143,10 +139,10 @@ function etToLocalHour(etHour, tz) {
 }
 
 function fmtHour(h) {
-  if (h === 0)  return '12:00 AM';
-  if (h < 12)  return `${h}:00 AM`;
-  if (h === 12) return '12:00 PM';
-  return `${h - 12}:00 PM`;
+  if (h === 0)  return '12 AM';
+  if (h < 12)  return `${h} AM`;
+  if (h === 12) return '12 PM';
+  return `${h - 12} PM`;
 }
 
 tzSelect.addEventListener('change', function () {

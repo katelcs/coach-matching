@@ -81,11 +81,22 @@ google_bp = make_google_blueprint(
 app.register_blueprint(google_bp, url_prefix="/login")
 
 SPANISH_COUNTRIES = [
+    "Neutral Latin America",
     "Argentina", "Bolivia", "Chile", "Colombia", "Costa Rica", "Cuba",
     "Dominican Republic", "Ecuador", "El Salvador", "Equatorial Guinea",
     "Guatemala", "Honduras", "Mexico", "Nicaragua", "Panama", "Paraguay",
     "Peru", "Puerto Rico", "Spain", "Uruguay", "Venezuela",
 ]
+
+COUNTRY_CODES = {
+    "Neutral Latin America": "LA",
+    "Argentina": "AR", "Bolivia": "BO", "Chile": "CL", "Colombia": "CO",
+    "Costa Rica": "CR", "Cuba": "CU", "Dominican Republic": "DO",
+    "Ecuador": "EC", "El Salvador": "SV", "Equatorial Guinea": "GQ",
+    "Guatemala": "GT", "Honduras": "HN", "Mexico": "MX", "Nicaragua": "NI",
+    "Panama": "PA", "Paraguay": "PY", "Peru": "PE", "Puerto Rico": "PR",
+    "Spain": "ES", "Uruguay": "UY", "Venezuela": "VE",
+}
 
 def _fmt_et(h):
     if h == 0:   return "12:00 AM"
@@ -93,8 +104,15 @@ def _fmt_et(h):
     if h == 12:  return "12:00 PM"
     return f"{h - 12}:00 PM"
 
-ET_HOURS   = list(range(3, 24)) + [0, 1]  # 3 AM … 11 PM ET, then 12 AM, 1 AM
-TIME_SLOTS = [_fmt_et(h) for h in ET_HOURS]
+def _fmt_et_display(h):
+    if h == 0:   return "12 AM"
+    if h < 12:   return f"{h} AM"
+    if h == 12:  return "12 PM"
+    return f"{h - 12} PM"
+
+ET_HOURS            = list(range(3, 24)) + [0, 1]  # 3 AM … 11 PM ET, then 12 AM, 1 AM
+TIME_SLOTS          = [_fmt_et(h) for h in ET_HOURS]
+TIME_SLOTS_DISPLAY  = [_fmt_et_display(h) for h in ET_HOURS]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
 TIMEZONES = [
@@ -272,7 +290,7 @@ def _student_private(course_config):
     covered, slot_countries = _coach_covered_slots()
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
-        (h, s) for h, s in zip(ET_HOURS, TIME_SLOTS)
+        (h, s, d) for h, s, d in zip(ET_HOURS, TIME_SLOTS, TIME_SLOTS_DISPLAY)
         if not covered or s in covered_times
     ]
 
@@ -331,14 +349,15 @@ def _student_private(course_config):
     return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
                            covered_keys=covered, country_slots=json.dumps(country_slots),
-                           slot_countries=slot_countries, course_config=course_config, error=error)
+                           slot_countries=slot_countries, country_codes=COUNTRY_CODES,
+                           course_config=course_config, error=error)
 
 
 def _student_generic(course_config, course_slug):
     covered, slot_countries = _coach_covered_slots()
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
-        (h, s) for h, s in zip(ET_HOURS, TIME_SLOTS)
+        (h, s, d) for h, s, d in zip(ET_HOURS, TIME_SLOTS, TIME_SLOTS_DISPLAY)
         if not covered or s in covered_times
     ]
 
@@ -407,6 +426,7 @@ def _student_generic(course_config, course_slug):
                            covered_keys=covered,
                            country_slots=json.dumps(country_slots),
                            slot_countries=slot_countries,
+                           country_codes=COUNTRY_CODES,
                            error=error)
 
 
