@@ -123,7 +123,22 @@ TIMEZONES = [
     ("America/Argentina/Buenos_Aires","UTC -3 (Buenos Aires)"),
     ("America/Montevideo",            "UTC -3 (Montevideo)"),
     ("UTC",                           "UTC +0 (UTC)"),
+    ("Europe/London",                 "UTC +0 (London)"),
     ("Europe/Madrid",                 "UTC +1 (Madrid)"),
+    ("Europe/Paris",                  "UTC +1 (Paris)"),
+    ("Europe/Berlin",                 "UTC +1 (Berlin)"),
+    ("Africa/Johannesburg",           "UTC +2 (Johannesburg)"),
+    ("Europe/Athens",                 "UTC +2 (Athens)"),
+    ("Europe/Moscow",                 "UTC +3 (Moscow)"),
+    ("Asia/Dubai",                    "UTC +4 (Dubai)"),
+    ("Asia/Karachi",                  "UTC +5 (Karachi)"),
+    ("Asia/Kolkata",                  "UTC +5:30 (Mumbai / New Delhi)"),
+    ("Asia/Dhaka",                    "UTC +6 (Dhaka)"),
+    ("Asia/Bangkok",                  "UTC +7 (Bangkok)"),
+    ("Asia/Singapore",                "UTC +8 (Singapore)"),
+    ("Asia/Shanghai",                 "UTC +8 (Beijing / Shanghai)"),
+    ("Asia/Tokyo",                    "UTC +9 (Tokyo)"),
+    ("Australia/Sydney",              "UTC +10 (Sydney)"),
 ]
 
 
