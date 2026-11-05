@@ -143,10 +143,14 @@
         <td class="keep-visible col-response-hrs"><span class="response-hours-display" data-student-id="{{ s.id }}">{% if s.response_hours is not none %}{{ s.response_hours }}h{% else %}—{% endif %}</span></td>
 
         <td>
+          {% set assigned_name = '' %}
+          {% for c in all_coaches %}{% if c.email == s.assigned_coach %}{% set assigned_name = c.name %}{% endif %}{% endfor %}
+          <span class="coach-name-display" data-student-id="{{ s.id }}">{{ assigned_name or '—' }}</span>
           <select class="coach-select assign-select"
                   data-student-id="{{ s.id }}"
-                  data-assigned-time="{{ s.assigned_time or '' }}">
-            <option value="">— Select coach —</option>
+                  data-assigned-time="{{ s.assigned_time or '' }}"
+                  style="margin-top:4px;display:block;font-size:0.75rem;opacity:0.6">
+            <option value="">— change —</option>
             {% for c in all_coaches %}
             <option value="{{ c.email }}" {% if c.email == s.assigned_coach %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
@@ -349,6 +353,8 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
   }
 
   coachSelect.addEventListener('change', function () {
+    const nameEl = document.querySelector(`.coach-name-display[data-student-id="${studentId}"]`);
+    if (nameEl) nameEl.textContent = this.options[this.selectedIndex].text === '— change —' ? '—' : this.options[this.selectedIndex].text;
     loadSlots(this.value, timeSelect, null);
   });
 
