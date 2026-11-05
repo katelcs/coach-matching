@@ -145,7 +145,7 @@
         <td class="keep-visible col-assigned-at"><span class="assigned-at-display" data-student-id="{{ s.id }}">{{ s.assigned_at_et }}</span></td>
         <td class="keep-visible col-response-hrs"><span class="response-hours-display" data-student-id="{{ s.id }}">{% if s.response_hours is not none %}{{ s.response_hours }}h{% else %}—{% endif %}</span></td>
 
-        <td>
+        <td class="keep-visible">
           {% set assigned_name = '' %}
           {% for c in all_coaches %}{% if c.email == s.assigned_coach %}{% set assigned_name = c.name %}{% endif %}{% endfor %}
           <span class="coach-name-display" data-student-id="{{ s.id }}">{{ assigned_name or '—' }}</span>
