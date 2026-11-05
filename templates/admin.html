@@ -40,11 +40,17 @@
   <!-- ── Students ───────────────────────────────────────────── -->
   <h2 style="margin-top:var(--space-6)">Students ({{ students | length }})</h2>
 
-  <div class="course-tabs" style="margin-bottom:var(--space-3)">
-    <button class="course-tab active-tab" data-course="all" onclick="switchCourseTab('all')">All</button>
-    {% for slug, cfg in courses.items() %}
-    <button class="course-tab" data-course="{{ slug }}" onclick="switchCourseTab('{{ slug }}')">{{ cfg.name }}</button>
-    {% endfor %}
+  <div style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-3)">
+    <div class="course-tabs" style="margin-bottom:0">
+      <button class="course-tab active-tab" data-course="all" onclick="switchCourseTab('all')">All</button>
+      {% for slug, cfg in courses.items() %}
+      <button class="course-tab" data-course="{{ slug }}" onclick="switchCourseTab('{{ slug }}')">{{ cfg.name }}</button>
+      {% endfor %}
+    </div>
+    <div class="course-tabs" style="margin-bottom:0">
+      <button class="course-tab active-tab" data-assigned="all" onclick="switchAssignedFilter('all')">All</button>
+      <button class="course-tab" data-assigned="unassigned" onclick="switchAssignedFilter('unassigned')">Unassigned</button>
+    </div>
   </div>
 
   <table class="data-table hide-response-cols" id="students-table">
@@ -221,18 +227,35 @@ document.querySelectorAll('.coach-row').forEach(row => {
   });
 });
 
-// ── Course tab filtering ──────────────────────────────────────
+// ── Course tab + assigned filter ──────────────────────────────
 const RESPONSE_COL_COURSES = new Set(['private-coaching', 'premier-coaching']);
+let activeCourseSlug   = 'all';
+let activeAssignedMode = 'all';
+
+function applyFilters() {
+  document.querySelectorAll('.student-row').forEach(row => {
+    const rowCourse    = row.dataset.course || 'private-coaching';
+    const isAssigned   = row.classList.contains('row-assigned');
+    const courseMatch  = activeCourseSlug === 'all' || rowCourse === activeCourseSlug;
+    const assignMatch  = activeAssignedMode === 'all' || !isAssigned;
+    row.style.display  = (courseMatch && assignMatch) ? '' : 'none';
+  });
+  const showCols = RESPONSE_COL_COURSES.has(activeCourseSlug);
+  document.getElementById('students-table').classList.toggle('hide-response-cols', !showCols);
+}
 
 function switchCourseTab(slug) {
-  document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active-tab'));
-  document.querySelector(`.course-tab[data-course="${slug}"]`).classList.add('active-tab');
-  document.querySelectorAll('.student-row').forEach(row => {
-    const rowCourse = row.dataset.course || 'private-coaching';
-    row.style.display = (slug === 'all' || rowCourse === slug) ? '' : 'none';
-  });
-  const showCols = RESPONSE_COL_COURSES.has(slug);
-  document.getElementById('students-table').classList.toggle('hide-response-cols', !showCols);
+  activeCourseSlug = slug;
+  document.querySelectorAll('[data-course]').forEach(t => t.classList.remove('active-tab'));
+  document.querySelector(`[data-course="${slug}"]`).classList.add('active-tab');
+  applyFilters();
+}
+
+function switchAssignedFilter(mode) {
+  activeAssignedMode = mode;
+  document.querySelectorAll('[data-assigned]').forEach(t => t.classList.remove('active-tab'));
+  document.querySelector(`[data-assigned="${mode}"]`).classList.add('active-tab');
+  applyFilters();
 }
 
 // ── Assignment dropdowns ──────────────────────────────────────
