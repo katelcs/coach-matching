@@ -217,6 +217,8 @@ COURSES = {
         "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this challenge?",
         "previous_study_label": "If you've taken any LCS lessons, which ones have you completed?",
         "days": ["Monday", "Friday"],
+        "availability_hint": "We recommend having your coaching sessions on Fridays or Mondays, while the week's lessons are fresh in your mind. If you are unavailable either of those days, please provide your availability in the box below the chart.",
+        "has_availability_other": True,
     },
     "subjunctive-challenge": {
         "name": "Subjunctive Challenge",
@@ -314,6 +316,14 @@ def _student_private(course_config):
                     country_slots[country] = []
                 if key not in country_slots[country]:
                     country_slots[country].append(key)
+    # "Neutral Latin America" = union of all non-Spain coach slots
+    la_slots = []
+    for _c, _keys in country_slots.items():
+        if _c != "Spain":
+            for _k in _keys:
+                if _k not in la_slots:
+                    la_slots.append(_k)
+    country_slots["Neutral Latin America"] = la_slots
 
     error = None
     if request.method == "POST":
@@ -381,6 +391,14 @@ def _student_generic(course_config, course_slug):
                     country_slots[country] = []
                 if key not in country_slots[country]:
                     country_slots[country].append(key)
+    # "Neutral Latin America" = union of all non-Spain coach slots
+    la_slots = []
+    for _c, _keys in country_slots.items():
+        if _c != "Spain":
+            for _k in _keys:
+                if _k not in la_slots:
+                    la_slots.append(_k)
+    country_slots["Neutral Latin America"] = la_slots
 
     error = None
     if request.method == "POST":
@@ -395,6 +413,7 @@ def _student_generic(course_config, course_slug):
         agreement_acknowledged  = request.form.get("agreement_acknowledged", "") == "yes"
         assessment_acknowledged = request.form.get("assessment_acknowledged", "") == "yes"
         availability            = request.form.get("availability", "{}")
+        availability_text       = request.form.get("availability_text", "").strip()
         continue_same_coach     = request.form.get("continue_same_coach", "")
         continue_same_time      = request.form.get("continue_same_time", "")
 
@@ -406,11 +425,11 @@ def _student_generic(course_config, course_slug):
                 """INSERT INTO student_submissions
                    (course, name, email, location, timezone, countries, motivation,
                     previous_study, accommodations, agreement_acknowledged, assessment_acknowledged,
-                    availability, continue_same_coach, continue_same_time)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    availability, availability_text, continue_same_coach, continue_same_time)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (course_slug, name, email, location, timezone, countries, motivation,
                  previous_study, accommodations, agreement_acknowledged, assessment_acknowledged,
-                 availability, continue_same_coach, continue_same_time)
+                 availability, availability_text, continue_same_coach, continue_same_time)
             )
             db.commit()
             return render_template("thank_you.html", role="student")
@@ -640,6 +659,28 @@ def admin_toggle_coach_active(coach_email):
     db.execute("UPDATE coach_submissions SET is_active = ? WHERE email = ?", (new_state, coach_email))
     db.commit()
     return jsonify({"ok": True, "is_active": new_state})
+
+
+@app.route("/admin/coach/<coach_email>/remove-slot", methods=["POST"])
+def admin_remove_coach_slot(coach_email):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    data = request.json
+    slot = data.get("slot")
+    if not slot:
+        return jsonify({"error": "slot required"}), 400
+    db = get_db()
+    coach = db.execute("SELECT availability FROM coach_submissions WHERE email = ?", (coach_email,)).fetchone()
+    if not coach:
+        return jsonify({"error": "not found"}), 404
+    av = json.loads(coach["availability"] or "{}")
+    removed = slot in av
+    if removed:
+        del av[slot]
+        db.execute("UPDATE coach_submissions SET availability = ? WHERE email = ?", (json.dumps(av), coach_email))
+        db.commit()
+    return jsonify({"ok": True, "removed": removed})
 
 
 @app.route("/admin/coach-slots/<coach_email>")

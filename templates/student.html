@@ -70,7 +70,7 @@
                   data-day="{{ day }}" data-time="{{ slot_label }}"
                   {% if key not in covered_keys %}data-locked="true"{% endif %}>
                 {% if countries_here %}
-                <span class="slot-countries">{% for c in countries_here %}{{ country_codes.get(c, c[:2]) }}{% if not loop.last %} {% endif %}{% endfor %}</span>
+                <span class="slot-countries">{% for c in countries_here %}<span class="cc-badge">{{ country_codes.get(c, c[:2]) }}</span>{% endfor %}</span>
                 {% endif %}
                 <span class="slot-available-label">Available</span>
               </td>

@@ -348,12 +348,23 @@ textarea {
 .slot:hover { background: rgba(68,154,194,0.12); }
 
 .slot-countries {
-  display: block;
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: rgba(31,27,22,0.6);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px 2px 0;
   pointer-events: none;
+}
+
+.cc-badge {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: rgba(31,27,22,0.82);
+  background: rgba(31,27,22,0.08);
+  border-radius: 2px;
+  padding: 1px 3px;
+  line-height: 1.4;
 }
 .slot-available-label {
   display: none;
@@ -783,13 +794,53 @@ details summary:hover { text-decoration: underline; }
 .coach-row.selected-coach td { background: rgba(68,154,194,0.14) !important; border-bottom-color: var(--cobalt); }
 .coach-row.coach-inactive td { opacity: 0.45; }
 
+/* Slot remove button in coach detail grid */
+.admin-slot-editable { position: relative; cursor: pointer !important; }
+.admin-slot-editable:hover { background: rgba(200,98,63,0.15) !important; }
+.slot-remove-btn {
+  display: none;
+  position: absolute;
+  top: 1px; right: 1px;
+  width: 14px; height: 14px;
+  background: rgba(200,98,63,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  font-size: 0.6rem;
+  line-height: 14px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+.admin-slot-editable:hover .slot-remove-btn { display: block; }
+.admin-slot-editable td { position: relative; }
+
 .assigned-cell { text-align: center; vertical-align: middle; }
 .assigned-check { width: auto; cursor: pointer; accent-color: var(--cobalt); transform: scale(1.2); }
-.status-select { font-size: 0.72rem; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--rule); background: var(--paper); cursor: pointer; }
-.status-select option[value="unassigned"] { color: var(--slate); }
-.status-select option[value="offered"]    { color: var(--cobalt); }
-.status-select option[value="assigned"]   { color: var(--forest, #2d6a4f); }
 
+.status-select {
+  font-size: 0.72rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  cursor: pointer;
+  min-width: 130px;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.status-select[data-status="offered"] {
+  background: rgba(176,169,111,0.18);
+  border-color: #b0a96f;
+  color: #5c5530;
+}
+.status-select[data-status="assigned"] {
+  background: rgba(42,157,106,0.15);
+  border-color: #2a9d6a;
+  color: #1a6b48;
+}
+
+.student-row[data-status="offered"] td { background: rgba(176,169,111,0.06) !important; }
 .row-assigned td { background: rgba(31,27,22,0.07) !important; color: var(--slate); }
 .row-assigned td a, .row-assigned td select { opacity: 0.6; }
 

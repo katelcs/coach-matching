@@ -55,8 +55,8 @@
       {% endfor %}
     </div>
     <div class="course-tabs" style="margin-bottom:0">
-      <button class="course-tab active-tab" data-assigned="all" onclick="switchAssignedFilter('all')">All</button>
-      <button class="course-tab" data-assigned="unassigned" onclick="switchAssignedFilter('unassigned')">Unassigned</button>
+      <button class="course-tab" data-assigned="all" onclick="switchAssignedFilter('all')">All</button>
+      <button class="course-tab active-tab" data-assigned="unassigned" onclick="switchAssignedFilter('unassigned')">Unassigned</button>
     </div>
   </div>
 
@@ -95,7 +95,8 @@
           data-status="{{ s.status or ('assigned' if s.is_assigned else 'unassigned') }}">
 
         <td class="assigned-cell keep-visible">
-          <select class="status-select" data-student-id="{{ s.id }}">
+          <select class="status-select" data-student-id="{{ s.id }}"
+                  data-status="{{ s.status or ('assigned' if s.is_assigned else 'unassigned') }}">
             <option value="unassigned" {% if (s.status or 'unassigned') == 'unassigned' %}selected{% endif %}>Unassigned</option>
             <option value="offered"    {% if (s.status or '') == 'offered' %}selected{% endif %}>Offered to coach</option>
             <option value="assigned"   {% if (s.status or '') == 'assigned' %}selected{% endif %}>Assigned</option>
@@ -239,6 +240,60 @@ document.querySelectorAll('.coach-active-toggle').forEach(btn => {
   });
 });
 
+function renderCoachEditGrid(tableEl, coachEmail, av) {
+  let html = '<thead><tr><th></th>';
+  DAYS.forEach(d => html += `<th>${d.slice(0,3)}</th>`);
+  html += '</tr></thead><tbody>';
+  TIME_SLOTS.forEach(slot => {
+    let rowCells = '', hasData = false;
+    DAYS.forEach(day => {
+      const key = `${day}|${slot}`;
+      const s   = av[key];
+      if (!s || s === 'unavailable') {
+        rowCells += '<td class="slot admin-slot"></td>';
+      } else {
+        rowCells += `<td class="slot admin-slot ${s} admin-slot-editable" data-key="${key}" data-email="${coachEmail}" style="position:relative">` +
+                    `<button class="slot-remove-btn" title="Remove slot">✕</button></td>`;
+        hasData = true;
+      }
+    });
+    if (hasData) html += `<tr><td class="time-label">${slot}</td>${rowCells}</tr>`;
+  });
+  html += '</tbody>';
+  tableEl.innerHTML = html;
+
+  tableEl.querySelectorAll('.slot-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      const cell  = this.closest('[data-key]');
+      const key   = cell.dataset.key;
+      const email = cell.dataset.email;
+      if (!confirm(`Remove slot "${key}" from this coach?`)) return;
+      const resp = await fetch(`/admin/coach/${encodeURIComponent(email)}/remove-slot`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({slot: key})
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        delete av[key];
+        const coach = COACHES.find(c => c.email === email);
+        if (coach) coach.availability = JSON.stringify(av);
+        renderCoachEditGrid(tableEl, email, av);
+        // Refresh combined grid
+        delete combined[key];
+        renderAvGrid(document.getElementById('combined-grid'), key2 => {
+          const c = combined[key2];
+          if (!c) return {td: '<td class="slot admin-slot"></td>', data: false};
+          const cls = c.definite > 0 ? 'definite' : 'maybe';
+          const n   = c.definite + c.maybe;
+          return {td: `<td class="slot admin-slot ${cls}">${n > 1 ? `<span class="slot-count">${n}</span>` : ''}</td>`, data: true};
+        });
+      }
+    });
+  });
+}
+
 document.querySelectorAll('.coach-row').forEach(row => {
   row.addEventListener('click', () => {
     document.querySelectorAll('.coach-row').forEach(r => r.classList.remove('selected-coach'));
@@ -246,12 +301,8 @@ document.querySelectorAll('.coach-row').forEach(row => {
     const coach = COACHES.find(c => c.email === row.dataset.email);
     const av    = JSON.parse(coach.availability || '{}');
     document.getElementById('coach-detail-title').textContent =
-      `${coach.name} · ${coach.country} · ${coach.timezone}`;
-    renderAvGrid(document.getElementById('coach-detail-grid'), key => {
-      const s = av[key];
-      if (!s || s === 'unavailable') return {td: '<td class="slot admin-slot"></td>', data: false};
-      return {td: `<td class="slot admin-slot ${s}"></td>`, data: true};
-    });
+      `${coach.name} · ${coach.country} · ${coach.timezone} — click a slot to remove it`;
+    renderCoachEditGrid(document.getElementById('coach-detail-grid'), coach.email, av);
     document.getElementById('coach-detail').hidden = false;
     document.getElementById('coach-detail').scrollIntoView({behavior:'smooth', block:'nearest'});
   });
@@ -260,7 +311,7 @@ document.querySelectorAll('.coach-row').forEach(row => {
 // ── Course tab + assigned filter ──────────────────────────────
 const RESPONSE_COL_COURSES = new Set(['private-coaching', 'premier-coaching']);
 let activeCourseSlug   = 'all';
-let activeAssignedMode = 'all';
+let activeAssignedMode = 'unassigned';
 
 function applyFilters() {
   document.querySelectorAll('.student-row').forEach(row => {
@@ -336,6 +387,7 @@ document.querySelectorAll('.status-select').forEach(sel => {
     const row       = this.closest('.student-row');
     const isAssigned = status === 'assigned';
     row.dataset.status = status;
+    this.dataset.status = status;
     row.classList.toggle('row-assigned', isAssigned);
     row.classList.toggle('row-collapsed', isAssigned);
     try {
@@ -383,5 +435,8 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
     saveAssignment(studentId, coachSelect.value, this.value, statusEl);
   });
 });
+
+// Apply default filter on load
+applyFilters();
 </script>
 {% endblock %}

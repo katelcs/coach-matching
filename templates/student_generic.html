@@ -67,7 +67,11 @@
     <!-- ── Weekly Availability ────────────────────────────────── -->
     <section id="section-availability" {% if course_config.has_continue %}style="display:none"{% endif %}>
       <h2>Weekly Availability</h2>
+      {% if course_config.availability_hint %}
+      <p class="hint">{{ course_config.availability_hint }} Times shown in <span id="tz-label">Eastern Time (ET)</span>.</p>
+      {% else %}
       <p class="hint">Click all the times you're available. Times shown in <span id="tz-label">Eastern Time (ET)</span>.</p>
+      {% endif %}
       {% if available_slots %}
       <div class="grid-wrapper">
         <table class="availability-grid" id="student-grid">
@@ -88,7 +92,7 @@
                   data-day="{{ day }}" data-time="{{ slot_label }}"
                   {% if key not in covered_keys %}data-locked="true"{% endif %}>
                 {% if countries_here %}
-                <span class="slot-countries">{% for c in countries_here %}{{ country_codes.get(c, c[:2]) }}{% if not loop.last %} {% endif %}{% endfor %}</span>
+                <span class="slot-countries">{% for c in countries_here %}<span class="cc-badge">{{ country_codes.get(c, c[:2]) }}</span>{% endfor %}</span>
                 {% endif %}
                 <span class="slot-available-label">Available</span>
               </td>
@@ -100,6 +104,11 @@
       </div>
       {% else %}
       <p class="hint">No coach availability has been entered yet. Check back soon.</p>
+      {% endif %}
+      {% if course_config.has_availability_other %}
+      <label style="margin-top:var(--space-4);display:block">My coaching availability on other days.
+        <textarea name="availability_text" rows="3" placeholder="e.g. I'm also available Wednesdays at 2 PM ET."></textarea>
+      </label>
       {% endif %}
       <input type="hidden" name="availability" id="availability-data" value="{}" />
     </section>
