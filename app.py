@@ -301,7 +301,9 @@ def _student_private(course_config):
         "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != '' AND is_active IS NOT FALSE"
     ).fetchall()
     coach_countries = [r["country"] for r in coach_countries_rows]
-    available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
+    # Always include "Neutral Latin America" first — it's a student meta-category, not a coach country
+    specific = [c for c in SPANISH_COUNTRIES if c != "Neutral Latin America" and c in coach_countries]
+    available_countries = ["Neutral Latin America"] + (specific or [c for c in SPANISH_COUNTRIES if c != "Neutral Latin America"])
 
     coaches_all = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     country_slots = {}
@@ -376,7 +378,9 @@ def _student_generic(course_config, course_slug):
         "SELECT DISTINCT country FROM coach_submissions WHERE country IS NOT NULL AND country != '' AND is_active IS NOT FALSE"
     ).fetchall()
     coach_countries = [r["country"] for r in coach_countries_rows]
-    available_countries = [c for c in SPANISH_COUNTRIES if c in coach_countries] or SPANISH_COUNTRIES
+    # Always include "Neutral Latin America" first — it's a student meta-category, not a coach country
+    specific = [c for c in SPANISH_COUNTRIES if c != "Neutral Latin America" and c in coach_countries]
+    available_countries = ["Neutral Latin America"] + (specific or [c for c in SPANISH_COUNTRIES if c != "Neutral Latin America"])
 
     coaches_all = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     country_slots = {}
