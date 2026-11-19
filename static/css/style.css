@@ -416,6 +416,14 @@ textarea {
   color: var(--ink);
 }
 .av-legend.visible { display: flex; }
+.av-legend.av-legend-static { display: flex; margin-top: var(--space-2); }
+.av-legend-num {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(31,27,22,0.38);
+  line-height: 1;
+}
 .av-legend-item {
   display: flex;
   align-items: center;

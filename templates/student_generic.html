@@ -84,7 +84,8 @@
           <tbody>
             {% set sec = namespace(current='') %}
             {% for et_hour, slot_label, slot_display in available_slots %}
-            {% if et_hour < 12 %}{% set section_name = 'Morning' %}
+            {% if et_hour in [0, 1, 22, 23] %}{% set section_name = 'Late Night' %}
+            {% elif et_hour < 12 %}{% set section_name = 'Morning' %}
             {% elif et_hour < 17 %}{% set section_name = 'Afternoon' %}
             {% else %}{% set section_name = 'Evening' %}{% endif %}
             {% if section_name != sec.current %}{% set sec.current = section_name %}
@@ -107,6 +108,15 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+      <div class="av-legend av-legend-static">
+        <span class="av-legend-item">
+          <span class="av-legend-dot" style="background:#2a9d6a"></span>
+          <span>Available</span>
+        </span>
+        <span class="av-legend-item">
+          <span class="av-legend-num">3</span>&ensp;= coaches available
+        </span>
       </div>
       <div class="av-legend" id="av-legend"></div>
       {% else %}
