@@ -531,6 +531,22 @@ textarea {
   border-color: var(--cobalt);
   color: var(--cobalt);
 }
+.chip.chip-selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.chip.chip-selected:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.week-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: var(--space-2);
+}
 
 #ranked-list {
   list-style: none;

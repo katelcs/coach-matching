@@ -108,14 +108,13 @@
     {% if course_config.has_start_week %}
     <section>
       <h2>Start Week</h2>
-      <fieldset>
-        <legend>Which week would you like to begin your membership?</legend>
+      <p class="hint">Which week would you like to begin your membership?</p>
+      <div class="week-chips" id="week-chips">
         {% for opt in course_config.start_week_options %}
-        <label class="radio-label">
-          <input type="radio" name="start_week" value="{{ opt }}" required /> {{ opt }}
-        </label>
+        <button type="button" class="chip week-chip" data-value="{{ opt }}">{{ opt }}</button>
         {% endfor %}
-      </fieldset>
+      </div>
+      <input type="hidden" name="start_week" id="start-week-input" value="" />
     </section>
     {% endif %}
 
@@ -165,6 +164,21 @@
 </div>
 
 <script>
+// ── Start week chip selection ─────────────────────────────────
+{% if course_config.has_start_week %}
+(function () {
+  const chips = document.querySelectorAll('.week-chip');
+  const input = document.getElementById('start-week-input');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('chip-selected'));
+      chip.classList.add('chip-selected');
+      input.value = chip.dataset.value;
+    });
+  });
+})();
+{% endif %}
+
 // ── Timezone conversion ───────────────────────────────────────
 const tzSelect = document.getElementById('timezone-select');
 const tzLabel  = document.getElementById('tz-label');
