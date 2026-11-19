@@ -9,6 +9,10 @@
   {% else %}
   <p>Your preferences have been submitted. We'll be in touch soon.</p>
   {% endif %}
+  {% if role == "student" %}
+  <a href="https://sso.teachable.com/secure/964969/identity/login/password" class="btn btn-ghost">Access the course</a>
+  {% else %}
   <a href="{{ url_for('index') }}" class="btn btn-ghost">Home</a>
+  {% endif %}
 </div>
 {% endblock %}
