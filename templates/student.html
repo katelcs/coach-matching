@@ -108,7 +108,7 @@
     {% if course_config.has_start_week %}
     <section>
       <h2>Start Week</h2>
-      <p class="hint">Which week would you like to begin your membership?</p>
+      <p class="hint">Which week would you like your coaching to begin?</p>
       <div class="week-chips" id="week-chips">
         {% for opt in course_config.start_week_options %}
         <button type="button" class="chip week-chip" data-value="{{ opt }}">{{ opt }}</button>

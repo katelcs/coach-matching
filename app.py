@@ -283,8 +283,8 @@ COURSES = {
         "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?",
         "has_start_week": True,
         "start_week_options": [
-            "November 30", "December 7", "December 14",
-            "December 21", "December 28", "January 4",
+            "Nov 30", "Dec 7", "Dec 14",
+            "Dec 21", "Dec 28", "Jan 4",
         ],
     },
 }
