@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Student Form{% endblock %}
+{% block title %}{{ course_config.name }} — Enrollment Form{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Student Availability Form</h1>
+  <h1>{{ course_config.name }}</h1>
+  <p class="hint" style="margin-bottom:var(--space-4)">Enrollment Form</p>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  <form method="POST" action="{{ url_for('student_course', course_slug='private-coaching') }}">
+  <form method="POST" action="{{ url_for('student_course', course_slug=course_slug) }}">
 
     <!-- ── Your Info ─────────────────────────────────────────── -->
     <section>
@@ -86,16 +87,35 @@
       <input type="hidden" name="availability" id="availability-data" value="{}" />
     </section>
 
+    <!-- ── Start Week ────────────────────────────────────────── -->
+    {% if course_config.has_start_week %}
+    <section>
+      <h2>Start Week</h2>
+      <fieldset>
+        <legend>Which week would you like to begin your membership?</legend>
+        {% for opt in course_config.start_week_options %}
+        <label class="radio-label">
+          <input type="radio" name="start_week" value="{{ opt }}" required /> {{ opt }}
+        </label>
+        {% endfor %}
+      </fieldset>
+    </section>
+    {% endif %}
+
     <!-- ── Background ────────────────────────────────────────── -->
     <section>
       <h2>Background</h2>
-      <label>What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?
+      {% if course_config.has_motivation %}
+      <label>{{ course_config.motivation_label }}
         <textarea name="motivation" rows="4" required placeholder="Tell us why you're learning Spanish and what you hope to achieve…"></textarea>
       </label>
-      <label>Previous study experience
+      {% endif %}
+      {% if course_config.has_study_background %}
+      <label style="margin-top:var(--space-3)">Previous study experience
         <textarea name="study_background" rows="4" required placeholder="If you have previously studied with the LearnCraft Spanish method, which lesson did you get through? If you have studied Spanish through another method, please tell us a bit about your background. If none, write 'N/A'."></textarea>
       </label>
-      <label>Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
+      {% endif %}
+      <label style="margin-top:var(--space-3)">Do you need accommodations for any known conditions (e.g. ADHD, dyslexia, vision/hearing impairment)?
         <p class="hint" style="margin-top:0.2rem">Note: We are NOT experts in learning differences or disability accommodation, but we will try our best to serve your needs within our capabilities.</p>
         <textarea name="accommodations" rows="3" required placeholder="Describe any accommodations that would help you. If none, write 'None'."></textarea>
       </label>
@@ -108,10 +128,12 @@
         <input type="checkbox" name="agreement_acknowledged" value="yes" required />
         <span>I have read the <a href="https://drive.google.com/file/d/1azOI1GNnUmvuWPz0ANf_aTKKVyL7LYFO/view" target="_blank" rel="noopener">Student Agreement</a>, including the cancellation policy: in order to reschedule a coaching session I must (1) notify my coach in writing at least 24 hours in advance and (2) reschedule the session within 30 days of the original session date.</span>
       </label>
+      {% if course_config.has_assessment %}
       <label class="checkbox-label agreement-label" style="margin-top:0.8rem">
         <input type="checkbox" name="assessment_acknowledged" value="yes" required />
         <span>I understand I must complete the <a href="https://docs.google.com/forms/d/e/1FAIpQLSfbX3wqMurz1K_QAegvb0aTryUqnCI8IPp8a4fBuw6qB4Affw/viewform?usp=sf_link" target="_blank" rel="noopener">knowledge assessment</a> in order to begin my coaching sessions.</span>
       </label>
+      {% endif %}
     </section>
 
     <!-- ── Notes ─────────────────────────────────────────────── -->

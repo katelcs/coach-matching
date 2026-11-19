@@ -150,5 +150,12 @@ def init_db():
         except psycopg2.errors.DuplicateColumn:
             conn.rollback()
 
+    # Migration for start_week (Black Friday promo)
+    try:
+        cur.execute("ALTER TABLE student_submissions ADD COLUMN start_week TEXT")
+        conn.commit()
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+
     cur.close()
     conn.close()

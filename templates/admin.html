@@ -123,6 +123,7 @@
           {% else %}—{% endif %}
         </td>
         <td>
+          {% if s.start_week %}<div style="font-size:0.8rem;font-weight:600;margin-bottom:4px">Start: {{ s.start_week }}</div>{% endif %}
           {% if s.availability_text %}<details><summary>View</summary>{{ s.availability_text }}</details>
           {% elif s.availability and s.availability != '{}' %}
           <details>

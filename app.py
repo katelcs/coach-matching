@@ -270,6 +270,21 @@ COURSES = {
         "has_notes": False,
         "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this program?",
     },
+    "black-friday-promo": {
+        "name": "Black Friday Promotion",
+        "has_motivation": True,
+        "has_study_background": True,
+        "has_previous_study": False,
+        "has_assessment": True,
+        "has_continue": False,
+        "has_notes": True,
+        "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this course?",
+        "has_start_week": True,
+        "start_week_options": [
+            "November 30", "December 7", "December 14",
+            "December 21", "December 28", "January 4",
+        ],
+    },
 }
 
 
@@ -278,17 +293,19 @@ def student_index():
     return redirect(url_for("student_course", course_slug="private-coaching"))
 
 
+PRIVATE_TEMPLATE_COURSES = {"private-coaching", "black-friday-promo"}
+
 @app.route("/student/<course_slug>", methods=["GET", "POST"])
 def student_course(course_slug):
     course_config = COURSES.get(course_slug)
     if not course_config:
         return "Course not found", 404
-    if course_slug == "private-coaching":
-        return _student_private(course_config)
+    if course_slug in PRIVATE_TEMPLATE_COURSES:
+        return _student_private(course_config, course_slug)
     return _student_generic(course_config, course_slug)
 
 
-def _student_private(course_config):
+def _student_private(course_config, course_slug="private-coaching"):
     covered, slot_countries = _coach_covered_slots()
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
@@ -341,19 +358,21 @@ def _student_private(course_config):
         assessment_acknowledged = request.form.get("assessment_acknowledged", "") == "yes"
         notes                   = request.form.get("notes", "").strip()
         availability            = request.form.get("availability", "{}")
+        start_week              = request.form.get("start_week", "").strip() if course_config.get("has_start_week") else ""
 
-        if not name or not email or countries == "[]":
+        missing_start = course_config.get("has_start_week") and not start_week
+        if not name or not email or countries == "[]" or missing_start:
             error = "Please fill in all required fields."
         if not error:
             db = get_db()
             db.execute(
                 """INSERT INTO student_submissions
                    (course, name, email, location, timezone, countries, motivation, study_background,
-                    accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                ("private-coaching", name, email, location, timezone, countries, motivation,
+                    accommodations, agreement_acknowledged, assessment_acknowledged, availability, notes, start_week)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (course_slug, name, email, location, timezone, countries, motivation,
                  study_background, accommodations, agreement_acknowledged, assessment_acknowledged,
-                 availability, notes),
+                 availability, notes, start_week),
             )
             db.commit()
             return render_template("thank_you.html", role="student")
@@ -362,7 +381,7 @@ def _student_private(course_config):
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
                            covered_keys=covered, country_slots=json.dumps(country_slots),
                            slot_countries=slot_countries, country_codes=COUNTRY_CODES,
-                           course_config=course_config, error=error)
+                           course_config=course_config, course_slug=course_slug, error=error)
 
 
 def _student_generic(course_config, course_slug):
