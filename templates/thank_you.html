@@ -9,9 +9,9 @@
   {% else %}
   <p>Your preferences have been submitted. We'll be in touch soon.</p>
   {% endif %}
-  {% if role == "student" %}
+  {% if role == "student" and course_slug in ["private-coaching", "premier-coaching", "black-friday-promo"] %}
   <a href="https://sso.teachable.com/secure/964969/identity/login/password" class="btn btn-ghost">Access the course</a>
-  {% else %}
+  {% elif role == "coach" %}
   <a href="{{ url_for('index') }}" class="btn btn-ghost">Home</a>
   {% endif %}
 </div>

@@ -377,7 +377,7 @@ def _student_private(course_config, course_slug="private-coaching"):
                  availability, notes, start_week),
             )
             db.commit()
-            return render_template("thank_you.html", role="student")
+            return render_template("thank_you.html", role="student", course_slug=course_slug)
 
     return render_template("student.html", countries=available_countries,
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
@@ -458,7 +458,7 @@ def _student_generic(course_config, course_slug):
                  availability, availability_text, continue_same_coach, continue_same_time)
             )
             db.commit()
-            return render_template("thank_you.html", role="student")
+            return render_template("thank_you.html", role="student", course_slug=course_slug)
 
     course_days = course_config.get("days", DAYS)
     return render_template("student_generic.html",
