@@ -166,23 +166,25 @@ def index():
 
 
 def _coach_covered_slots():
-    """Return ({day|slot covered}, {day|slot: [country, ...]})."""
+    """Return ({day|slot covered}, {day|slot: [country, ...]}, {day|slot: coach_count})."""
     db = get_db()
     coaches = db.execute("SELECT country, availability FROM coach_submissions WHERE is_active IS NOT FALSE").fetchall()
     covered = set()
     slot_countries = {}
+    slot_coach_count = {}
     for coach in coaches:
         country = coach["country"] or ""
         av = json.loads(coach["availability"] or "{}")
         for key, status in av.items():
             if status in ("definite", "maybe") and "|" in key:
                 covered.add(key)
+                slot_coach_count[key] = slot_coach_count.get(key, 0) + 1
                 if country:
                     if key not in slot_countries:
                         slot_countries[key] = []
                     if country not in slot_countries[key]:
                         slot_countries[key].append(country)
-    return covered, slot_countries
+    return covered, slot_countries, slot_coach_count
 
 
 COURSES = {
@@ -306,7 +308,7 @@ def student_course(course_slug):
 
 
 def _student_private(course_config, course_slug="private-coaching"):
-    covered, slot_countries = _coach_covered_slots()
+    covered, slot_countries, slot_coach_count = _coach_covered_slots()
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
         (h, s, d) for h, s, d in zip(ET_HOURS, TIME_SLOTS, TIME_SLOTS_DISPLAY)
@@ -381,11 +383,12 @@ def _student_private(course_config, course_slug="private-coaching"):
                            available_slots=available_slots, days=DAYS, timezones=TIMEZONES,
                            covered_keys=covered, country_slots=json.dumps(country_slots),
                            slot_countries=slot_countries, country_codes=COUNTRY_CODES,
+                           slot_coach_count=slot_coach_count,
                            course_config=course_config, course_slug=course_slug, error=error)
 
 
 def _student_generic(course_config, course_slug):
-    covered, slot_countries = _coach_covered_slots()
+    covered, slot_countries, slot_coach_count = _coach_covered_slots()
     covered_times = {key.split("|", 1)[1] for key in covered}
     available_slots = [
         (h, s, d) for h, s, d in zip(ET_HOURS, TIME_SLOTS, TIME_SLOTS_DISPLAY)
@@ -469,6 +472,7 @@ def _student_generic(course_config, course_slug):
                            country_slots=json.dumps(country_slots),
                            slot_countries=slot_countries,
                            country_codes=COUNTRY_CODES,
+                           slot_coach_count=slot_coach_count,
                            error=error)
 
 

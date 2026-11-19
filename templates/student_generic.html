@@ -82,19 +82,25 @@
             </tr>
           </thead>
           <tbody>
+            {% set sec = namespace(current='') %}
             {% for et_hour, slot_label, slot_display in available_slots %}
+            {% if et_hour < 12 %}{% set section_name = 'Morning' %}
+            {% elif et_hour < 17 %}{% set section_name = 'Afternoon' %}
+            {% else %}{% set section_name = 'Evening' %}{% endif %}
+            {% if section_name != sec.current %}{% set sec.current = section_name %}
+            <tr class="section-header-row">
+              <td>{{ section_name }}</td>{% for d in days %}<td></td>{% endfor %}
+            </tr>
+            {% endif %}
             <tr>
               <td class="time-label" data-et-hour="{{ et_hour }}">{{ slot_display }}</td>
               {% for day in days %}
               {% set key = day ~ "|" ~ slot_label %}
-              {% set countries_here = slot_countries.get(key, []) %}
               <td class="slot {% if key not in covered_keys %}slot-locked{% endif %}"
                   data-day="{{ day }}" data-time="{{ slot_label }}"
                   {% if key not in covered_keys %}data-locked="true"{% endif %}>
-                {% if countries_here %}
-                <span class="slot-countries">{% for c in (countries_here | sort) %}<span class="cc-badge">{{ country_codes.get(c, c[:2]) }}</span>{% endfor %}</span>
-                {% endif %}
-                <span class="slot-available-label">Available</span>
+                <span class="slot-count">{{ slot_coach_count.get(key, 0) or '' }}</span>
+                <span class="slot-dots"></span>
               </td>
               {% endfor %}
             </tr>
@@ -102,6 +108,7 @@
           </tbody>
         </table>
       </div>
+      <div class="av-legend" id="av-legend"></div>
       {% else %}
       <p class="hint">No coach availability has been entered yet. Check back soon.</p>
       {% endif %}
@@ -238,10 +245,12 @@ function makeDraggable(li) {
 }
 
 function addToRanked(country) {
+  const color = countryColorMap[country] || '#888';
   const li = document.createElement('li');
   li.dataset.country = country;
   li.innerHTML = `
     <span class="drag-handle" aria-hidden="true">⠿</span>
+    <span class="chip-dot" style="background:${color}"></span>
     <span class="country-name">${country}</span>
     <button type="button" class="remove-btn" aria-label="Remove ${country}">×</button>
   `;
@@ -264,27 +273,75 @@ pool.querySelectorAll('.chip').forEach(chip => {
   });
 });
 
-// ── Availability grid (country-filtered toggle) ──────────────
+// ── Colour palette + country mapping ─────────────────────────
+const PALETTE = ['#3b82f6','#ef4444','#22c55e','#a855f7','#f97316','#06b6d4','#eab308','#ec4899','#14b8a6'];
+const countryColorMap = {};
+{% for country in countries %}
+countryColorMap[{{ country | tojson }}] = PALETTE[{{ loop.index0 }} % PALETTE.length];
+{% endfor %}
+
+// ── Availability grid ─────────────────────────────────────────
 const grid         = document.getElementById('student-grid');
 const avInput      = document.getElementById('availability-data');
+const avLegend     = document.getElementById('av-legend');
 const countrySlots = JSON.parse('{{ country_slots | safe }}');
 const avData       = {};
 
 function updateGridForCountries(selectedCountries) {
   if (!grid) return;
-  let union = null;
-  if (selectedCountries.length > 0) {
-    union = new Set();
-    selectedCountries.forEach(c => {
-      if (countrySlots[c]) countrySlots[c].forEach(k => union.add(k));
-    });
+
+  // Clear all dots from every cell
+  grid.querySelectorAll('.slot-dots').forEach(el => { el.innerHTML = ''; });
+  grid.querySelectorAll('.slot').forEach(cell => {
+    cell.classList.remove('has-dots', 'slot-accented');
+  });
+
+  if (selectedCountries.length === 0) {
+    if (avLegend) { avLegend.innerHTML = ''; avLegend.classList.remove('visible'); }
+    return;
   }
+
+  // Build a map: slot key → array of colors
+  const slotColors = {};
+  selectedCountries.forEach(country => {
+    const color = countryColorMap[country] || '#888';
+    if (countrySlots[country]) {
+      countrySlots[country].forEach(key => {
+        if (!slotColors[key]) slotColors[key] = [];
+        if (!slotColors[key].includes(color)) slotColors[key].push(color);
+      });
+    }
+  });
+
+  // Apply dots to cells
   grid.querySelectorAll('.slot').forEach(cell => {
     if (cell.dataset.locked) return;
     const key = `${cell.dataset.day}|${cell.dataset.time}`;
-    cell.classList.remove('slot-locked');
-    cell.classList.toggle('slot-accented', union !== null && union.has(key));
+    const colors = slotColors[key];
+    if (colors && colors.length > 0) {
+      const dotsEl = cell.querySelector('.slot-dots');
+      colors.forEach(c => {
+        const dot = document.createElement('span');
+        dot.className = 'slot-dot';
+        dot.style.background = c;
+        dotsEl.appendChild(dot);
+      });
+      cell.classList.add('has-dots');
+    }
   });
+
+  // Update legend
+  if (avLegend) {
+    avLegend.innerHTML = selectedCountries.map(country => {
+      const color = countryColorMap[country] || '#888';
+      return `<span class="av-legend-item">
+        <span class="av-legend-dot" style="background:${color}"></span>
+        <span>${country}</span>
+      </span>`;
+    }).join('');
+    avLegend.classList.add('visible');
+  }
+
   avInput.value = JSON.stringify(avData);
 }
 
