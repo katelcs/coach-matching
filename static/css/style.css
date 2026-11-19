@@ -318,22 +318,22 @@ textarea {
 .availability-grid th {
   background: var(--paper);
   padding: 6px 4px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   color: var(--slate);
   text-transform: uppercase;
 }
 
 .time-label {
   width: 1%;           /* shrink to content — day columns share the rest */
-  padding: 4px 6px;
+  padding: 4px 8px;
   white-space: nowrap;
   color: var(--slate);
   background: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   text-align: right;
 }
 
