@@ -350,6 +350,8 @@ textarea {
 .slot-countries {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   gap: 2px;
   padding: 2px 2px 0;
   pointer-events: none;
@@ -386,6 +388,14 @@ textarea {
 .slot.pref-first  { background: #2a9d6a; }
 .slot.pref-second { background: var(--cobalt); }
 .slot.pref-third  { background: var(--teal); }
+
+/* Accent-matched emphasis */
+.slot.slot-accented {
+  box-shadow: inset 0 0 0 2px rgba(176,169,111,0.75);
+  background: rgba(176,169,111,0.1);
+}
+.slot.slot-accented:hover { background: rgba(176,169,111,0.22) !important; }
+.slot.slot-accented.pref-first { box-shadow: none; }
 
 /* Coach availability states */
 .slot.definite    { background: #2a9d6a; }

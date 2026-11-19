@@ -92,7 +92,7 @@
                   data-day="{{ day }}" data-time="{{ slot_label }}"
                   {% if key not in covered_keys %}data-locked="true"{% endif %}>
                 {% if countries_here %}
-                <span class="slot-countries">{% for c in countries_here %}<span class="cc-badge">{{ country_codes.get(c, c[:2]) }}</span>{% endfor %}</span>
+                <span class="slot-countries">{% for c in (countries_here | sort) %}<span class="cc-badge">{{ country_codes.get(c, c[:2]) }}</span>{% endfor %}</span>
                 {% endif %}
                 <span class="slot-available-label">Available</span>
               </td>
@@ -282,12 +282,8 @@ function updateGridForCountries(selectedCountries) {
   grid.querySelectorAll('.slot').forEach(cell => {
     if (cell.dataset.locked) return;
     const key = `${cell.dataset.day}|${cell.dataset.time}`;
-    const shouldLock = union !== null && !union.has(key);
-    cell.classList.toggle('slot-locked', shouldLock);
-    if (shouldLock && avData[key]) {
-      delete avData[key];
-      cell.classList.remove('pref-first');
-    }
+    cell.classList.remove('slot-locked');
+    cell.classList.toggle('slot-accented', union !== null && union.has(key));
   });
   avInput.value = JSON.stringify(avData);
 }
@@ -296,7 +292,6 @@ if (grid) {
   grid.querySelectorAll('.slot').forEach(cell => {
     if (cell.dataset.locked) return;
     cell.addEventListener('click', () => {
-      if (cell.classList.contains('slot-locked')) return;
       const key = `${cell.dataset.day}|${cell.dataset.time}`;
       if (avData[key]) {
         delete avData[key];
