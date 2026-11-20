@@ -273,7 +273,7 @@ COURSES = {
         "motivation_label": "What is your motivation for learning Spanish and what is your overall fluency goal(s) for this program?",
     },
     "black-friday-promo": {
-        "name": "Black Friday Promotion",
+        "name": "Black Friday Special",
         "has_motivation": True,
         "has_study_background": True,
         "has_previous_study": False,
