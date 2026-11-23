@@ -704,6 +704,7 @@ textarea {
 .mini-slot.maybe       { background: var(--cobalt); }
 .mini-slot.unavailable { background: #c85e4a; }
 .mini-slot.selected    { background: var(--cobalt); }
+.mini-slot.available   { background: #2a9d6a; }
 .mini-slot.pref-first  { background: #2a9d6a; }
 .mini-slot.pref-second { background: var(--cobalt); }
 .mini-slot.pref-third  { background: var(--teal); color: var(--ink); }
