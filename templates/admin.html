@@ -66,6 +66,7 @@
         <th>Done</th>
         <th>Course</th>
         <th>Name</th>
+        <th>Admin Notes</th>
         <th>Email</th>
         <th>Location</th>
         <th>Accent Prefs</th>
@@ -116,12 +117,12 @@
           </div>
           <button class="reassign-btn btn btn-sm" data-student-id="{{ s.id }}" style="display:block;margin-top:4px;font-size:0.7rem;opacity:0.5">Move</button>
         </td>
+        <td class="keep-visible">{{ s.name }}</td>
         <td class="keep-visible">
-          <div>{{ s.name }}</div>
           <input type="text" class="admin-note-input" data-student-id="{{ s.id }}"
                  value="{{ s.admin_notes or '' }}"
                  placeholder="Add note…"
-                 style="margin-top:4px;width:100%;font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink);font-family:var(--font-sans)" />
+                 style="width:100%;min-width:140px;font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink);font-family:var(--font-sans)" />
         </td>
         <td class="keep-visible">{{ s.email }}</td>
 
@@ -195,7 +196,7 @@
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="20">No student submissions yet.</td></tr>
+      <tr><td colspan="21">No student submissions yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
