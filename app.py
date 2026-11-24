@@ -664,8 +664,8 @@ def admin():
         "availability": c["availability"] or "{}",
     } for c in coaches])
 
-    db_emails = {c["email"] for c in coaches}
-    staff_only = [s for s in STAFF_COACHES if s["email"] not in db_emails]
+    db_names = {c["name"].lower() for c in coaches}
+    staff_only = [s for s in STAFF_COACHES if s["name"].lower() not in db_names]
     all_coaches = staff_only + [dict(c) for c in coaches]
 
     return render_template("admin.html", students=students, coaches=coaches,
@@ -806,6 +806,18 @@ def admin_toggle_assigned(student_id):
     assigned_at_et = _to_eastern(row['assigned_at']) if row else '—'
     response_hours = _business_hours_elapsed(row['created_at'], row['assigned_at']) if row else None
     return jsonify({"ok": True, "assigned_at_et": assigned_at_et, "response_hours": response_hours})
+
+
+@app.route("/admin/student/<int:student_id>/save-note", methods=["POST"])
+def admin_save_note(student_id):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    note = request.json.get("note", "").strip()
+    db = get_db()
+    db.execute("UPDATE student_submissions SET admin_notes = ? WHERE id = ?", (note or None, student_id))
+    db.commit()
+    return jsonify({"ok": True})
 
 
 @app.route("/admin/student/<int:student_id>/reassign-course", methods=["POST"])

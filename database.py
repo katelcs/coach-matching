@@ -157,5 +157,12 @@ def init_db():
     except psycopg2.errors.DuplicateColumn:
         conn.rollback()
 
+    # Migration for admin notes
+    try:
+        cur.execute("ALTER TABLE student_submissions ADD COLUMN admin_notes TEXT")
+        conn.commit()
+    except psycopg2.errors.DuplicateColumn:
+        conn.rollback()
+
     cur.close()
     conn.close()
