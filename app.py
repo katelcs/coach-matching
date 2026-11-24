@@ -808,6 +808,20 @@ def admin_toggle_assigned(student_id):
     return jsonify({"ok": True, "assigned_at_et": assigned_at_et, "response_hours": response_hours})
 
 
+@app.route("/admin/student/<int:student_id>/reassign-course", methods=["POST"])
+def admin_reassign_course(student_id):
+    _, err = _require_admin()
+    if err:
+        return jsonify({"error": "unauthorized"}), 403
+    new_course = request.json.get("course", "").strip()
+    if new_course not in COURSES:
+        return jsonify({"error": "unknown course"}), 400
+    db = get_db()
+    db.execute("UPDATE student_submissions SET course = ? WHERE id = ?", (new_course, student_id))
+    db.commit()
+    return jsonify({"ok": True, "course": new_course, "course_name": COURSES[new_course]["name"]})
+
+
 @app.route("/admin/import-student", methods=["POST"])
 def admin_import_student():
     _, err = _require_admin()

@@ -103,7 +103,19 @@
           </select>
         </td>
 
-        <td class="keep-visible"><span class="course-badge">{{ course_name }}</span></td>
+        <td class="keep-visible">
+          <span class="course-badge course-badge-display" data-student-id="{{ s.id }}">{{ course_name }}</span>
+          <div class="reassign-wrap" data-student-id="{{ s.id }}" style="display:none">
+            <select class="reassign-select" style="font-size:0.75rem;margin-top:3px">
+              {% for slug, cfg in courses.items() %}
+              <option value="{{ slug }}" {% if slug == (s.course or 'private-coaching') %}selected{% endif %}>{{ cfg.name }}</option>
+              {% endfor %}
+            </select>
+            <button class="reassign-save btn btn-sm btn-primary" style="margin-top:3px">Save</button>
+            <button class="reassign-cancel btn btn-sm" style="margin-top:3px">✕</button>
+          </div>
+          <button class="reassign-btn btn btn-sm" data-student-id="{{ s.id }}" style="display:block;margin-top:4px;font-size:0.7rem;opacity:0.5">Move</button>
+        </td>
         <td class="keep-visible">{{ s.name }}</td>
         <td class="keep-visible">{{ s.email }}</td>
 
@@ -439,5 +451,51 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
 
 // Apply default filter on load
 applyFilters();
+
+// ── Course reassign ───────────────────────────────────────────
+document.querySelectorAll('.reassign-btn').forEach(btn => {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const id   = this.dataset.studentId;
+    const wrap = document.querySelector(`.reassign-wrap[data-student-id="${id}"]`);
+    this.style.display = 'none';
+    wrap.style.display = '';
+  });
+});
+
+document.querySelectorAll('.reassign-cancel').forEach(btn => {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const wrap = this.closest('.reassign-wrap');
+    const id   = wrap.dataset.studentId;
+    wrap.style.display = 'none';
+    document.querySelector(`.reassign-btn[data-student-id="${id}"]`).style.display = 'block';
+  });
+});
+
+document.querySelectorAll('.reassign-save').forEach(btn => {
+  btn.addEventListener('click', async function (e) {
+    e.stopPropagation();
+    const wrap     = this.closest('.reassign-wrap');
+    const id       = wrap.dataset.studentId;
+    const select   = wrap.querySelector('.reassign-select');
+    const newSlug  = select.value;
+    const resp     = await fetch(`/admin/student/${id}/reassign-course`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({course: newSlug})
+    });
+    const data = await resp.json();
+    if (!data.ok) return;
+    // Update badge text and row data-course
+    const badge = document.querySelector(`.course-badge-display[data-student-id="${id}"]`);
+    if (badge) badge.textContent = data.course_name;
+    const row = wrap.closest('.student-row');
+    if (row) row.dataset.course = data.course;
+    wrap.style.display = 'none';
+    document.querySelector(`.reassign-btn[data-student-id="${id}"]`).style.display = 'block';
+    applyFilters();
+  });
+});
 </script>
 {% endblock %}
