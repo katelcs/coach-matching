@@ -53,15 +53,7 @@ def _business_hours_elapsed(start_dt, end_dt):
     return round(total_secs / 3600, 1)
 
 
-STAFF_COACHES = [
-    {"name": "Gaby",    "email": "gaby@lcs.internal",    "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Diana",   "email": "diana@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Carla",   "email": "carla@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Michael", "email": "michael@lcs.internal", "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Caro",    "email": "caro@lcs.internal",    "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Ailen",   "email": "ailen@lcs.internal",   "country": "", "timezone": "", "availability": "{}"},
-    {"name": "Tamara",  "email": "tamara@lcs.internal",  "country": "", "timezone": "", "availability": "{}"},
-]
+STAFF_COACHES = []
 
 APPROVED_COACH_EMAILS = [e.strip() for e in os.environ.get("APPROVED_COACH_EMAILS", "").split(",") if e.strip()]
 APPROVED_ADMIN_EMAILS = [e.strip() for e in os.environ.get("APPROVED_ADMIN_EMAILS", "").split(",") if e.strip()]
