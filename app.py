@@ -234,6 +234,9 @@ COURSES = {
         "has_continue": False,
         "has_notes": False,
         "motivation_label": "What is your fluency goal for this program?",
+        "days": ["Monday", "Tuesday", "Wednesday"],
+        "availability_hint": "We recommend having your coaching sessions on Mondays, Tuesdays, or Wednesdays, while the week's lessons are fresh in your mind. If you are unavailable either of those days, please provide your availability in the box below the chart.",
+        "has_availability_other": True,
     },
     "post-cohort-program": {
         "name": "Post-Cohort Program",
