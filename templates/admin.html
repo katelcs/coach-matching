@@ -191,6 +191,7 @@
           <select class="time-select assign-select" data-student-id="{{ s.id }}">
             <option value="">— Select time —</option>
           </select>
+          <button class="assign-btn btn btn-primary btn-sm" data-student-id="{{ s.id }}" disabled style="margin-top:4px;display:block">Assign</button>
           <span class="assign-status" data-student-id="{{ s.id }}"></span>
         </td>
         <td><a href="{{ url_for('admin_match', student_id=s.id) }}" class="btn btn-secondary btn-sm">View matches</a></td>
@@ -363,23 +364,28 @@ function switchAssignedFilter(mode) {
 async function loadSlots(coachEmail, timeSelect, selectedTime) {
   timeSelect.innerHTML = '<option value="">— Select time —</option>';
   if (!coachEmail) return;
-  const resp = await fetch(`/admin/coach-slots/${encodeURIComponent(coachEmail)}`);
-  const slots = await resp.json();
-  slots.forEach(slot => {
-    const [day, time] = slot.split('|');
-    const opt = document.createElement('option');
-    opt.value = slot;
-    opt.textContent = `${day.substring(0,3)} ${time}`;
-    if (slot === selectedTime) opt.selected = true;
-    timeSelect.appendChild(opt);
-  });
-  if (selectedTime && !slots.includes(selectedTime)) {
-    const [day, time] = selectedTime.split('|');
-    const opt = document.createElement('option');
-    opt.value = selectedTime;
-    opt.textContent = `${day.substring(0,3)} ${time} (assigned)`;
-    opt.selected = true;
-    timeSelect.appendChild(opt);
+  try {
+    const resp = await fetch(`/admin/coach-slots/${encodeURIComponent(coachEmail)}`);
+    const slots = await resp.json();
+    if (!Array.isArray(slots)) return;
+    slots.forEach(slot => {
+      const [day, time] = slot.split('|');
+      const opt = document.createElement('option');
+      opt.value = slot;
+      opt.textContent = `${day.substring(0,3)} ${time}`;
+      if (slot === selectedTime) opt.selected = true;
+      timeSelect.appendChild(opt);
+    });
+    if (selectedTime && !slots.includes(selectedTime)) {
+      const [day, time] = selectedTime.split('|');
+      const opt = document.createElement('option');
+      opt.value = selectedTime;
+      opt.textContent = `${day.substring(0,3)} ${time} (assigned)`;
+      opt.selected = true;
+      timeSelect.appendChild(opt);
+    }
+  } catch (e) {
+    console.error('loadSlots error:', e);
   }
 }
 
@@ -439,21 +445,31 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
   const savedTime  = coachSelect.dataset.assignedTime;
   const timeSelect = document.querySelector(`.time-select[data-student-id="${studentId}"]`);
   const statusEl   = document.querySelector(`.assign-status[data-student-id="${studentId}"]`);
+  const assignBtn  = document.querySelector(`.assign-btn[data-student-id="${studentId}"]`);
+
+  function updateAssignBtn() {
+    if (assignBtn) assignBtn.disabled = !(coachSelect.value && timeSelect.value);
+  }
 
   if (coachSelect.value) {
-    loadSlots(coachSelect.value, timeSelect, savedTime);
+    loadSlots(coachSelect.value, timeSelect, savedTime).then(updateAssignBtn);
   }
 
   coachSelect.addEventListener('change', function () {
     const nameEl = document.querySelector(`.coach-name-display[data-student-id="${studentId}"]`);
     if (nameEl) nameEl.textContent = this.options[this.selectedIndex].text === '— change —' ? '—' : this.options[this.selectedIndex].text;
-    loadSlots(this.value, timeSelect, null);
+    loadSlots(this.value, timeSelect, null).then(updateAssignBtn);
   });
 
-  timeSelect.addEventListener('change', function () {
-    if (!coachSelect.value || !this.value) return;
-    saveAssignment(studentId, coachSelect.value, this.value, statusEl);
-  });
+  timeSelect.addEventListener('change', updateAssignBtn);
+
+  if (assignBtn) {
+    assignBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!coachSelect.value || !timeSelect.value) return;
+      saveAssignment(studentId, coachSelect.value, timeSelect.value, statusEl);
+    });
+  }
 });
 
 // Apply default filter on load
