@@ -448,7 +448,7 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
   const assignBtn  = document.querySelector(`.assign-btn[data-student-id="${studentId}"]`);
 
   function updateAssignBtn() {
-    if (assignBtn) assignBtn.disabled = !(coachSelect.value && timeSelect.value);
+    if (assignBtn) assignBtn.disabled = !coachSelect.value;
   }
 
   if (coachSelect.value) {
@@ -466,8 +466,8 @@ document.querySelectorAll('.coach-select').forEach(coachSelect => {
   if (assignBtn) {
     assignBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (!coachSelect.value || !timeSelect.value) return;
-      saveAssignment(studentId, coachSelect.value, timeSelect.value, statusEl);
+      if (!coachSelect.value) return;
+      saveAssignment(studentId, coachSelect.value, timeSelect.value || null, statusEl);
     });
   }
 });
